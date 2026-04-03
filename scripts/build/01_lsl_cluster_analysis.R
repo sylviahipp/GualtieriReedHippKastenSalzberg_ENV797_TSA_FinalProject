@@ -128,6 +128,7 @@ get_clusters <- function(matrix, k){
     cluster = km$cluster
   )
   
+  # visualize clusters
   cluster_means <- aggregate(matrix,
                              by = list(cluster = km$cluster),
                              FUN = mean)
