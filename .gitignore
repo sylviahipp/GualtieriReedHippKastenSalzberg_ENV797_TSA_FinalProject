@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 data/raw/Partitioned LCL Data*
+data/processed/lcl_data
