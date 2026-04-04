@@ -7,9 +7,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 # setup
 ```{r}
 library(here)
@@ -175,7 +172,7 @@ plot_grid(
 )
 
 plot_grid(
-  autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU1 Decomp Residuals, 2012"),
+  autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU2 Decomp Residuals, 2012"),
   autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
 )
 
