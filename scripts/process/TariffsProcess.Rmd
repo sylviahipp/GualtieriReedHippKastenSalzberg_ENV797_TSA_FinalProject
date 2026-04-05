@@ -1,0 +1,47 @@
+---
+title: "Tariff Processing"
+author: "Maeve Gualtieri-Reed"
+date: "2026-04-03"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(here)
+library(tidyverse)
+library(lubridate)
+
+```
+
+```{r}
+tariff_raw <- read_xlsx(path="./data/raw/Tariffs.xlsx") %>% 
+   mutate(
+    date = as.Date(TariffDateTime),         
+    hour = hour(TariffDateTime),            
+    minute = minute(TariffDateTime)         
+  ) %>% 
+  mutate(
+    datehour = floor_date(TariffDateTime, unit = "hour")
+  ) %>% 
+  select("datehour","minute","Tariff") %>% 
+  pivot_wider(
+    names_from = minute,
+    values_from = Tariff
+  ) %>% 
+  rename("Min0" = `0`, "Min30" = `30`) %>% 
+  mutate(
+    HourRate = case_when(
+      (Min0 == "High" & Min30 != "Low") | (Min30 == "High" & Min0 != "Low") ~ "High",
+      (Min0 == "Low" & Min30 != "High") | (Min30 == "Low" & Min0 != "High") ~ "Low",
+      TRUE ~ "Normal"
+    )
+  ) %>% 
+  select("datehour","HourRate")
+
+write.csv(tariff_raw, file = "data/processed/tariffs.csv", row.names = FALSE)
+
+
+
+```
+
