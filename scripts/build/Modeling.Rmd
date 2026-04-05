@@ -1,0 +1,216 @@
+---
+title: "Modeling"
+author: "Sadie Kasten"
+date: "2026-04-05"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# setup
+```{r}
+library(here)
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+library(forecast)
+
+```
+
+# Load in the data
+```{r}
+#load in data
+#ignore my wd. chunk was overriding what I set in the console, # out if not Sadie
+setwd("/Users/sadiekasten/Desktop/Time Series/R files/final proj")
+raw_Std <- read.csv(file="data/processed/Std_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("Std",cluster))
+
+
+raw_ToU <- read.csv(file="data/processed/ToU_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("ToU",cluster))
+```
+
+# Visualize the raw data
+
+```{r}
+
+raw_all <- rbind(raw_Std,raw_ToU)
+
+#raw visualization
+ggplot(raw_all)+
+  geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.6)+
+  labs(x = "Date and Time", y = "Load (kWh)")+
+  ggtitle("Standard and Time of Use Demand Clustered Households, 2012 and 2013")+
+  theme_bw()
+
+#2012 visualization
+raw_Std_2012 <- raw_Std %>% 
+  filter(year(datetime)==2012)
+
+raw_ToU_2012 <- raw_ToU %>% 
+  filter(year(datetime)==2012)
+
+raw_all_2012 <- rbind(raw_Std_2012,raw_ToU_2012)
+
+ggplot(raw_all_2012)+
+  geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.5)+
+  labs(x = "Date and Time", y = "Load (kWh)")+
+  ggtitle("Standard and Time of Use Demand Clustered Households, 2012")+
+  theme_bw()
+```
+
+#Process data
+
+```{r}
+processed_Std_2012 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2012)
+
+processed_ToU_2012 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2012)
+
+processed_Std_2013 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2013)
+
+processed_ToU_2013 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2013)
+
+```
+
+#Convert to ts
+
+```{r}
+
+#2012
+ts_Std1_2012 <- msts(processed_Std_2012$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_Std2_2012 <- msts(processed_Std_2012$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU1_2012 <- msts(processed_ToU_2012$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU2_2012 <- msts(processed_ToU_2012$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+#2013
+
+ts_Std1_2013 <- msts(processed_Std_2013$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_Std2_2013 <- msts(processed_Std_2013$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU1_2013 <- msts(processed_ToU_2013$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0))
+
+```
+
+# Decomposition
+
+```{r}
+#std1 decomposition
+Std1_2012_decomp <- ts_Std1_2012 %>% mstl()
+
+#std2 decomp
+Std2_2012_decomp <- ts_Std2_2012 %>% mstl() 
+
+#tou1 decomposition
+ToU1_2012_decomp <- ts_ToU1_2012 %>% mstl() 
+
+#tou2 decomp
+ToU2_2012_decomp <- ts_ToU2_2012 %>% mstl() 
+```
+
+# ACF and PACF 
+
+```{r}
+
+plot_grid(
+  autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Std1 Decomp Residuals, 2012"),
+  autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+plot_grid(
+  autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Std2 Decomp Residuals, 2012"),
+  autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+plot_grid(
+  autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU1 Decomp Residuals, 2012"),
+  autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+plot_grid(
+  autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU2 Decomp Residuals, 2012"),
+  autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+```
+
+
+#Advanced seasonality models
+
+```{r}
+#training subset, using December of 2012, hourly (744)
+n_dec = 744
+ts_Std1_2012_train <- subset(ts_Std1_2012, end = length(ts_Std1_2012)-n_dec)
+
+#create a subset for testing purpose
+ts_Std1_2012_test <- subset(ts_Std1_2012, start = length(ts_Std1_2012)-n_dec)
+
+autoplot(ts_Std1_2012_train)
+autoplot(ts_Std1_2012_test)
+```
+
+
+```{r}
+#SARIMA + Fourier Terms
+#Annual, weekly, and daily seasonality likely for electricity load data.
+#hourly loads in ts
+
+
+```
+
+
+```{r}
+#TBATS
+```
+
+
+```{r}
+#Prophet
+```
+
