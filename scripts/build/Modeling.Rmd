@@ -291,9 +291,33 @@ plot_grid(ARIMA_Std1_plot,
 One thing I am curious about: we were hoping that ToU forecasts would be higher than actual. Not the case based on the ARIMA models, however, there did not appear to be much change in the original plot of all 4 groups between 2012 and 2013 for the ToU groups anyway...
 
 
-```{r}
-#TBATS
+```{r, message=FALSE, warning=FALSE}
+#TBATS for Std1
+TBATS_Std1 <- tbats(ts_Std1_2012)
+
+TBATS_Std1_forecast <- forecast(TBATS_Std1, h=8760)
+
+autoplot(ts_Std1_2013) +
+  autolayer(TBATS_Std1_forecast, series="TBATS",PI=FALSE)+
+  ylab("Load (kWh)") + labs(title="TBATS Std1")
+
 ```
+
+Produced a straight line - not great. Will use the training data to see if shorter time horizons work better.
+
+```{r}
+#TBATS for Std1 2012 training
+TBATS_Std1_train <- tbats(ts_Std1_2012_train)
+
+TBATS_Std1_forecast_train <- forecast(TBATS_Std1_train, h=744)
+
+autoplot(ts_Std1_2012) +
+  autolayer(TBATS_Std1_forecast_train, series="TBATS",PI=FALSE)+
+  ylab("Load (kWh)") + labs(title="TBATS Std1 2012 Training")
+```
+
+Not better at representing the daily seasonality that goes on, spiking the load.
+
 
 
 ```{r}
