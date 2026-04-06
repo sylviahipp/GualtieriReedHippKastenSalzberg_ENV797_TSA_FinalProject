@@ -226,7 +226,7 @@ Std1_ARIMA_training_forecast_actual_plot <- autoplot(ts_Std1_2012) +
   autolayer(ARIMAF_Std1_train_forecast, series="ARIMA_FOURIER",PI=FALSE) +
   ylab("Load (kWh)")
 
-ggsave("figures/Std1_ARIMA_training_forecast_actual_plot.png", plot = Std1_ARIMA_training_forecast_actual_plot,width = 4, height = 5, dpi = 300)
+ggsave("figures/Std1_ARIMA_training_forecast_actual_plot.png", plot = Std1_ARIMA_training_forecast_actual_plot,width = 10, height = 8, dpi = 300)
 
 ```
 
@@ -294,7 +294,7 @@ ARIMA_F_2013_plots <- plot_grid(ARIMA_Std1_plot,
           ARIMA_ToU2_plot,
           nrow =2, ncol = 2)
 
-ggsave("figures/ARIMA_F_2013_plots.png", plot = ARIMA_F_2013_plots,width = 4, height = 5, dpi = 300)
+ggsave("figures/ARIMA_F_2013_plots.png", plot = ARIMA_F_2013_plots,width = 15, height = 12, dpi = 300)
 ```
 
 One thing I am curious about: we were hoping that ToU forecasts would be higher than actual. Not the case based on the ARIMA models, however, there did not appear to be much change in the original plot of all 4 groups between 2012 and 2013 for the ToU groups anyway...
