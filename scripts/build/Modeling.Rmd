@@ -1,0 +1,326 @@
+---
+title: "Modeling"
+author: "Sadie Kasten"
+date: "2026-04-05"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# setup
+```{r}
+library(here)
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+library(forecast)
+
+```
+
+# Load in the data
+```{r}
+#load in data
+#ignore my wd. chunk was overriding what I set in the console, # out if not Sadie
+setwd("/Users/sadiekasten/Desktop/Time Series/R files/final proj")
+raw_Std <- read.csv(file="data/processed/Std_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("Std",cluster))
+
+
+raw_ToU <- read.csv(file="data/processed/ToU_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("ToU",cluster))
+```
+
+# Visualize the raw data
+
+```{r}
+
+raw_all <- rbind(raw_Std,raw_ToU)
+
+#raw visualization
+ggplot(raw_all)+
+  geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.6)+
+  labs(x = "Date and Time", y = "Load (kWh)")+
+  ggtitle("Standard and Time of Use Demand Clustered Households, 2012 and 2013")+
+  theme_bw()
+
+#2012 visualization
+raw_Std_2012 <- raw_Std %>% 
+  filter(year(datetime)==2012)
+
+raw_ToU_2012 <- raw_ToU %>% 
+  filter(year(datetime)==2012)
+
+raw_all_2012 <- rbind(raw_Std_2012,raw_ToU_2012)
+
+ggplot(raw_all_2012)+
+  geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.5)+
+  labs(x = "Date and Time", y = "Load (kWh)")+
+  ggtitle("Standard and Time of Use Demand Clustered Households, 2012")+
+  theme_bw()
+```
+
+#Process data
+
+```{r}
+processed_Std_2012 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2012)
+
+processed_ToU_2012 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2012)
+
+processed_Std_2013 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2013)
+
+processed_ToU_2013 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2013)
+
+```
+
+#Convert to ts
+
+```{r}
+
+#2012
+ts_Std1_2012 <- msts(processed_Std_2012$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_Std2_2012 <- msts(processed_Std_2012$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU1_2012 <- msts(processed_ToU_2012$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU2_2012 <- msts(processed_ToU_2012$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+#2013
+
+ts_Std1_2013 <- msts(processed_Std_2013$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_Std2_2013 <- msts(processed_Std_2013$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU1_2013 <- msts(processed_ToU_2013$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0))
+
+```
+
+# Decomposition
+
+```{r}
+#std1 decomposition
+Std1_2012_decomp <- ts_Std1_2012 %>% mstl()
+
+#std2 decomp
+Std2_2012_decomp <- ts_Std2_2012 %>% mstl() 
+
+#tou1 decomposition
+ToU1_2012_decomp <- ts_ToU1_2012 %>% mstl() 
+
+#tou2 decomp
+ToU2_2012_decomp <- ts_ToU2_2012 %>% mstl() 
+```
+
+# ACF and PACF 
+
+```{r}
+
+plot_grid(
+  autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Std1 Decomp Residuals, 2012"),
+  autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+plot_grid(
+  autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Std2 Decomp Residuals, 2012"),
+  autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+plot_grid(
+  autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU1 Decomp Residuals, 2012"),
+  autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+plot_grid(
+  autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU2 Decomp Residuals, 2012"),
+  autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+)
+
+```
+
+
+#Advanced seasonality models
+
+```{r}
+#training subset, using December of 2012, hourly (744)
+n_dec = 744
+ts_Std1_2012_train <- subset(ts_Std1_2012, end = length(ts_Std1_2012)-n_dec)
+
+#create a subset for testing purpose
+ts_Std1_2012_test <- subset(ts_Std1_2012, start = length(ts_Std1_2012)-n_dec)
+
+autoplot(ts_Std1_2012_train)
+autoplot(ts_Std1_2012_test)
+autoplot(ts_Std1_2012)
+
+```
+
+
+```{r}
+#ARIMA + Fourier Terms for Std1 2012 training time series
+#Annual, weekly, and daily seasonality likely for electricity load data.
+#hourly load forecasting
+#using less than a year of data to test, not going to include yearly K value >1
+
+ARIMA_Std1_train <- auto.arima(ts_Std1_2012_train, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_2012_train,  K=c(5,3,1)))
+AIC(ARIMA_Std1_train)
+
+#Forecast the ARIMA model
+#h = 744 hours of December
+ARIMAF_Std1_train_forecast <- forecast(ARIMA_Std1_train,
+                           xreg=fourier(ts_Std1_2012_train, K=c(5,3,1),h=744), h=744) 
+
+#Plot forecast
+autoplot(ARIMAF_Std1_train_forecast) + ylab("Load (kWh)")
+
+#Plot forecast on top of actual
+autoplot(ts_Std1_2012) +
+  autolayer(ARIMAF_Std1_train_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)")
+
+```
+
+Tried K values (2,2,1=6044), (4,2,1=3760), (5,2,2=892), (5,3,1=677), (5,3,2=895), and (5,3,3=883) on Std1. Had to input a K value for yearly seasonality because it was specified in the time series for the function to run. The lowest AIC value was (5,3,1) at 677.7, representing daily, weekly, yearly K values. Accepted a '0' as a K value but im not sure what that means so did not use.
+
+Forecast lower than actual, might not be a great model. However, will use this generically for now to forecast 2013 using 2012 data for all 4 groups and compare to actual for 2013.
+
+
+```{r}
+#ARIMA + Fourier Terms for all 4 groups
+# 2013 had 8760 hours 
+
+#Std1
+ARIMA_Std1 <- auto.arima(ts_Std1_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_2012,  K=c(5,3,1)))
+
+ARIMA_Std1_forecast <- forecast(ARIMA_Std1,
+                           xreg=fourier(ts_Std1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_Std1_plot <- autoplot(ts_Std1_2013) +
+  autolayer(ARIMA_Std1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std1")
+
+#Std2
+ARIMA_Std2 <- auto.arima(ts_Std2_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std2_2012,  K=c(5,3,1)))
+
+ARIMA_Std2_forecast <- forecast(ARIMA_Std2,
+                           xreg=fourier(ts_Std2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_Std2_plot <- autoplot(ts_Std2_2013) +
+  autolayer(ARIMA_Std2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std2")
+
+#ToU1
+ARIMA_ToU1 <- auto.arima(ts_ToU1_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU1_2012,  K=c(5,3,1)))
+
+ARIMA_ToU1_forecast <- forecast(ARIMA_ToU1,
+                           xreg=fourier(ts_ToU1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_ToU1_plot <- autoplot(ts_ToU1_2013) +
+  autolayer(ARIMA_ToU1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU1")
+
+#ToU2
+ARIMA_ToU2 <- auto.arima(ts_ToU2_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU2_2012,  K=c(5,3,1)))
+
+ARIMA_ToU2_forecast <- forecast(ARIMA_ToU2,
+                           xreg=fourier(ts_ToU2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
+  autolayer(ARIMA_ToU2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU2")
+
+```
+
+```{r}
+#ARIMA Plot visualization
+
+plot_grid(ARIMA_Std1_plot,
+          ARIMA_Std2_plot,
+          ARIMA_ToU1_plot,
+          ARIMA_ToU2_plot,
+          nrow =2, ncol = 2)
+```
+
+One thing I am curious about: we were hoping that ToU forecasts would be higher than actual. Not the case based on the ARIMA models, however, there did not appear to be much change in the original plot of all 4 groups between 2012 and 2013 for the ToU groups anyway...
+
+
+```{r, message=FALSE, warning=FALSE}
+#TBATS for Std1
+TBATS_Std1 <- tbats(ts_Std1_2012)
+
+TBATS_Std1_forecast <- forecast(TBATS_Std1, h=8760)
+
+autoplot(ts_Std1_2013) +
+  autolayer(TBATS_Std1_forecast, series="TBATS",PI=FALSE)+
+  ylab("Load (kWh)") + labs(title="TBATS Std1")
+
+```
+
+Produced a straight line - not great. Will use the training data to see if shorter time horizons work better.
+
+```{r}
+#TBATS for Std1 2012 training
+TBATS_Std1_train <- tbats(ts_Std1_2012_train)
+
+TBATS_Std1_forecast_train <- forecast(TBATS_Std1_train, h=744)
+
+autoplot(ts_Std1_2012) +
+  autolayer(TBATS_Std1_forecast_train, series="TBATS",PI=FALSE)+
+  ylab("Load (kWh)") + labs(title="TBATS Std1 2012 Training")
+```
+
+Not better at representing the daily seasonality that goes on, spiking the load.
+
+
+
+```{r}
+#Prophet
+```
+
