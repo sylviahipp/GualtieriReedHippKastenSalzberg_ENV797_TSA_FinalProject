@@ -87,6 +87,9 @@ k_means_matrix <- function(x){
 lcl_matrix_std <- k_means_matrix(lcl_hourly_std)  
 lcl_matrix_tou <- k_means_matrix(lcl_hourly_tou)
 
+# number of households
+print(glue("Standard Households in sample: {lcl_matrix_std %>% nrow()}"))
+print(glue("Time-of-Use Households in sample: {lcl_matrix_tou %>% nrow()}"))
 
 # Find optimal clusters for each group ------------------------------------
 
@@ -176,6 +179,9 @@ aggregate_clusters <- function(df, clusters){
 
 std_aggregated <- aggregate_clusters(lcl_hourly_std, std_clusters)
 tou_aggregated <- aggregate_clusters(lcl_hourly_tou, tou_clusters)
+
+print(glue("Std: \nHouseholds in Cluster 1: {std_clusters %>% filter(cluster==1) %>% nrow()} \nHouseholds in Cluser 2: {std_clusters %>% filter(cluster==2) %>% nrow()}"))
+print(glue("ToU: \nHouseholds in Cluster 1: {tou_clusters %>% filter(cluster==1) %>% nrow()} \nHouseholds in Cluser 2: {tou_clusters %>% filter(cluster==2) %>% nrow()}"))
 
 write_csv(std_aggregated, "data/processed/Std_household_load.csv")
 write_csv(tou_aggregated, "data/processed/ToU_household_load.csv")
