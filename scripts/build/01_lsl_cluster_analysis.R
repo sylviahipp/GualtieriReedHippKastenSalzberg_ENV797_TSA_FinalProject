@@ -149,6 +149,16 @@ k_tou <- 2
 std_clusters <- get_clusters(lcl_matrix_std, k = k_std)
 tou_clusters <- get_clusters(lcl_matrix_tou, k = k_tou)
 
+## Investigate some strange patterns in data (high regular peaks around midnight)
+test_std <- lcl_hourly_std %>% 
+  pivot_longer(cols = c(2:ncol(.)), 
+               names_to = "household", 
+               values_to = "load_kwh") %>% 
+  inner_join(std_clusters, by = "household") %>% 
+  mutate(cluster = factor(cluster)) %>% 
+  filter(cluster == 1)
+
+
 
 # Aggregate households by cluster -----------------------------------------
 
@@ -184,8 +194,8 @@ tou_aggregated <- aggregate_clusters(lcl_hourly_tou, tou_clusters)
 print(glue("Std: \nHouseholds in Cluster 1: {std_clusters %>% filter(cluster==1) %>% nrow()} \nHouseholds in Cluser 2: {std_clusters %>% filter(cluster==2) %>% nrow()}"))
 print(glue("ToU: \nHouseholds in Cluster 1: {tou_clusters %>% filter(cluster==1) %>% nrow()} \nHouseholds in Cluser 2: {tou_clusters %>% filter(cluster==2) %>% nrow()}"))
 
-#write_csv(std_aggregated, "data/processed/Std_household_load.csv")
-#write_csv(tou_aggregated, "data/processed/ToU_household_load.csv")
+write_csv(std_aggregated, "data/processed/Std_household_load.csv")
+write_csv(tou_aggregated, "data/processed/ToU_household_load.csv")
 
 # Visualize Clusters ------------------------------------------------------
 
