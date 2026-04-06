@@ -11,8 +11,9 @@ library(glue)
 library(forecast)
 library(future.apply)
 library(cluster)
+library(cowplot)
 
-set.seed(123)
+set.seed(123)   # set seed for clustering 
 
 # set wd to access datasets saved locally
 setwd("C:/Users/sch90/Documents/Repositories/GualtieriReedHippKastenSalzberg_ENV797_TSA_FinalProject")
@@ -87,6 +88,9 @@ k_means_matrix <- function(x){
 lcl_matrix_std <- k_means_matrix(lcl_hourly_std)  
 lcl_matrix_tou <- k_means_matrix(lcl_hourly_tou)
 
+# number of households
+print(glue("Standard Households in sample: {lcl_matrix_std %>% nrow()}"))
+print(glue("Time-of-Use Households in sample: {lcl_matrix_tou %>% nrow()}"))
 
 # Find optimal clusters for each group ------------------------------------
 
@@ -177,27 +181,59 @@ aggregate_clusters <- function(df, clusters){
 std_aggregated <- aggregate_clusters(lcl_hourly_std, std_clusters)
 tou_aggregated <- aggregate_clusters(lcl_hourly_tou, tou_clusters)
 
-write_csv(std_aggregated, "data/processed/Std_household_load.csv")
-write_csv(tou_aggregated, "data/processed/ToU_household_load.csv")
+print(glue("Std: \nHouseholds in Cluster 1: {std_clusters %>% filter(cluster==1) %>% nrow()} \nHouseholds in Cluser 2: {std_clusters %>% filter(cluster==2) %>% nrow()}"))
+print(glue("ToU: \nHouseholds in Cluster 1: {tou_clusters %>% filter(cluster==1) %>% nrow()} \nHouseholds in Cluser 2: {tou_clusters %>% filter(cluster==2) %>% nrow()}"))
+
+#write_csv(std_aggregated, "data/processed/Std_household_load.csv")
+#write_csv(tou_aggregated, "data/processed/ToU_household_load.csv")
 
 # Visualize Clusters ------------------------------------------------------
 
 # smooth to daily 
-std_aggregated %>% 
-  mutate(date = as.Date(datetime_utc)) %>% 
-  group_by(date, cluster) %>% 
-  summarize(daily_load = sum(load_kwh)) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = date, y = daily_load, color = cluster)) + 
-  geom_line()
+plot_clusters <- function(df_agg, group="Std"){
+  if(group=="Std"){
+    colors = c("orange", "red")
+  }
+  else{
+    colors = c("darkgreen", "darkblue")
+  }
+  
+  df_agg_daily <- df_agg %>% 
+    mutate(date = as.Date(datetime_utc), 
+           cluster = factor(cluster, 
+                            levels=c(1,2), 
+                            labels=c(glue("{group} Cluster 1"), glue("{group} Cluster 2")))) %>% 
+    group_by(date, cluster) %>% 
+    summarize(daily_load = sum(load_kwh)) %>% 
+    ungroup() 
+  
+  plot <- ggplot(df_agg_daily) + 
+    geom_line(aes(x = date, y = daily_load, color = cluster), 
+              linewidth = 0.25) + 
+    geom_vline(aes(xintercept = as.Date("2013-01-01")), 
+               color = "black", linetype = 2) + 
+    scale_x_date(date_labels = "%b-%Y") +
+    scale_color_manual(values = colors) +
+    theme_classic() + 
+    theme(legend.position = "right") +
+    labs(
+      x = NULL, 
+      y = "Daily Load (kWh)", 
+      color = NULL, 
+      title = group
+    )
+    
+  return(plot)
+}
 
-tou_aggregated %>% 
-  mutate(date = as.Date(datetime_utc)) %>% 
-  group_by(date, cluster) %>% 
-  summarize(daily_load = sum(load_kwh)) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = date, y = daily_load, color = cluster)) + 
-  geom_line()
+std_cluster_plot <- plot_clusters(std_aggregated, group="Std")
+tou_cluster_plot <- plot_clusters(tou_aggregated, group="ToU")
+
+plot_grid(std_cluster_plot, tou_cluster_plot, 
+          nrow = 2) %>% 
+  ggsave(filename = "outputs/daily_load_by_cluster.png", 
+         width = 5, height = 3.5)
+
 
 
 # km2 <- kmeans(lcl_matrix_tou, centers = 2, nstart = 50)

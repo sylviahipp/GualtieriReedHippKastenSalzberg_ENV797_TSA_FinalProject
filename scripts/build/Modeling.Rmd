@@ -307,9 +307,10 @@ Produced a straight line - not great. Will use the training data to see if short
 
 ```{r}
 #TBATS for Std1 2012 training
-TBATS_Std1_train <- tbats(ts_Std1_2012_train)
+TBATS_Std1_train <- tbats(ts_Std1_2012_train,
+  seasonal.periods = c(24, 168, 8760))
 
-TBATS_Std1_forecast_train <- forecast(TBATS_Std1_train, h=744)
+TBATS_Std1_forecast_train <- forecast(TBATS_Std1_train,seasonal.periods = c(24, 168, 8760), h=744)
 
 autoplot(ts_Std1_2012) +
   autolayer(TBATS_Std1_forecast_train, series="TBATS",PI=FALSE)+
