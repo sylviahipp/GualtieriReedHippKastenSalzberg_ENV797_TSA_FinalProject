@@ -15,6 +15,7 @@ library(tidyverse)
 library(lubridate)
 library(cowplot)
 library(forecast)
+library(readxl)
 ```
 
 # Load in the data
