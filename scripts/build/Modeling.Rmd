@@ -193,16 +193,102 @@ ts_Std1_2012_test <- subset(ts_Std1_2012, start = length(ts_Std1_2012)-n_dec)
 
 autoplot(ts_Std1_2012_train)
 autoplot(ts_Std1_2012_test)
+autoplot(ts_Std1_2012)
+
 ```
 
 
 ```{r}
-#SARIMA + Fourier Terms
+#ARIMA + Fourier Terms for Std1 2012 training time series
 #Annual, weekly, and daily seasonality likely for electricity load data.
-#hourly loads in ts
+#hourly load forecasting
+#using less than a year of data to test, not going to include yearly K value >1
 
+ARIMA_Std1_train <- auto.arima(ts_Std1_2012_train, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_2012_train,  K=c(5,3,1)))
+AIC(ARIMA_Std1_train)
+
+#Forecast the ARIMA model
+#h = 744 hours of December
+ARIMAF_Std1_train_forecast <- forecast(ARIMA_Std1_train,
+                           xreg=fourier(ts_Std1_2012_train, K=c(5,3,1),h=744), h=744) 
+
+#Plot forecast
+autoplot(ARIMAF_Std1_train_forecast) + ylab("Load (kWh)")
+
+#Plot forecast on top of actual
+autoplot(ts_Std1_2012) +
+  autolayer(ARIMAF_Std1_train_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)")
 
 ```
+
+Tried K values (2,2,1=6044), (4,2,1=3760), (5,2,2=892), (5,3,1=677), (5,3,2=895), and (5,3,3=883) on Std1. Had to input a K value for yearly seasonality because it was specified in the time series for the function to run. The lowest AIC value was (5,3,1) at 677.7, representing daily, weekly, yearly K values. Accepted a '0' as a K value but im not sure what that means so did not use.
+
+Forecast lower than actual, might not be a great model. However, will use this generically for now to forecast 2013 using 2012 data for all 4 groups and compare to actual for 2013.
+
+
+```{r}
+#ARIMA + Fourier Terms for all 4 groups
+# 2013 had 8760 hours 
+
+#Std1
+ARIMA_Std1 <- auto.arima(ts_Std1_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_2012,  K=c(5,3,1)))
+
+ARIMA_Std1_forecast <- forecast(ARIMA_Std1,
+                           xreg=fourier(ts_Std1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_Std1_plot <- autoplot(ts_Std1_2013) +
+  autolayer(ARIMA_Std1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std1")
+
+#Std2
+ARIMA_Std2 <- auto.arima(ts_Std2_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std2_2012,  K=c(5,3,1)))
+
+ARIMA_Std2_forecast <- forecast(ARIMA_Std2,
+                           xreg=fourier(ts_Std2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_Std2_plot <- autoplot(ts_Std2_2013) +
+  autolayer(ARIMA_Std2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std2")
+
+#ToU1
+ARIMA_ToU1 <- auto.arima(ts_ToU1_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU1_2012,  K=c(5,3,1)))
+
+ARIMA_ToU1_forecast <- forecast(ARIMA_ToU1,
+                           xreg=fourier(ts_ToU1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_ToU1_plot <- autoplot(ts_ToU1_2013) +
+  autolayer(ARIMA_ToU1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU1")
+
+#ToU2
+ARIMA_ToU2 <- auto.arima(ts_ToU2_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU2_2012,  K=c(5,3,1)))
+
+ARIMA_ToU2_forecast <- forecast(ARIMA_ToU2,
+                           xreg=fourier(ts_ToU2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
+  autolayer(ARIMA_ToU2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU2")
+
+```
+
+```{r}
+#ARIMA Plot visualization
+
+plot_grid(ARIMA_Std1_plot,
+          ARIMA_Std2_plot,
+          ARIMA_ToU1_plot,
+          ARIMA_ToU2_plot,
+          nrow =2, ncol = 2)
+```
+
+One thing I am curious about: we were hoping that ToU forecasts would be higher than actual. Not the case based on the ARIMA models, however, there did not appear to be much change in the original plot of all 4 groups between 2012 and 2013 for the ToU groups anyway...
 
 
 ```{r}
