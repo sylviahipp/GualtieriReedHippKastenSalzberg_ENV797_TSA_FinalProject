@@ -241,7 +241,7 @@ tou_cluster_plot <- plot_clusters(tou_aggregated, group="ToU")
 
 plot_grid(std_cluster_plot, tou_cluster_plot, 
           nrow = 2) %>% 
-  ggsave(filename = "outputs/daily_load_by_cluster.png", 
+  ggsave(filename = "figures/daily_load_by_cluster.png", 
          width = 5, height = 3.5)
 
 
