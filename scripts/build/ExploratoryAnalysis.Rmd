@@ -35,6 +35,34 @@ raw_ToU <- read.csv(file="./data/processed/ToU_household_load.csv",
   mutate(cluster = as.character(cluster)) %>% 
   select("datetime","cluster","load_kwh") %>% 
   mutate(cluster = paste("ToU",cluster))
+
+tariff_raw <- read_xlsx(path="./data/raw/Tariffs.xlsx") %>% 
+   mutate(
+    date = as.Date(TariffDateTime),         
+    hour = hour(TariffDateTime),            
+    minute = minute(TariffDateTime)         
+  ) %>% 
+  mutate(
+    datehour = floor_date(TariffDateTime, unit = "hour")
+  ) %>% 
+  select("datehour","minute","Tariff") %>% 
+  pivot_wider(
+    names_from = minute,
+    values_from = Tariff
+  ) %>% 
+  rename("Min0" = `0`, "Min30" = `30`) %>% 
+  mutate(
+    HourRate = case_when(
+      (Min0 == "High" & Min30 != "Low") | (Min30 == "High" & Min0 != "Low") ~ "High",
+      (Min0 == "Low" & Min30 != "High") | (Min30 == "Low" & Min0 != "High") ~ "Low",
+      TRUE ~ "Normal"
+    )
+  ) %>% 
+  select("datehour","HourRate") %>% 
+  mutate(HourRate = factor(HourRate,
+                      levels = c("Low", "Normal", "High"),
+                      ordered = TRUE)) %>% 
+  mutate(HourRateLevel = as.numeric(HourRate))
 ```
 
 # Visualize the raw data
@@ -44,11 +72,19 @@ raw_ToU <- read.csv(file="./data/processed/ToU_household_load.csv",
 raw_all <- rbind(raw_Std,raw_ToU)
 
 #raw visualization
-ggplot(raw_all)+
+raw_all_plot<- ggplot(raw_all)+
   geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.6)+
   labs(x = "Date and Time", y = "Load (kWh)")+
-  ggtitle("Standard and Time of Use Demand Clustered Households, 2012 and 2013")+
-  theme_bw()
+  ggtitle("Standard and Time of Use Demand Clustered Households, 
+          2012 and 2013")+
+  theme_bw()+
+  scale_color_manual(
+     values = c("Std 1" = "goldenrod1", "Std 2" = "red", "ToU 1" ="darkgreen", "ToU 2" = "blue"))
+
+raw_all_plot
+  
+
+ggsave("figures/all_data.png", plot = raw_all_plot,width = 8, height = 4, dpi = 300)
 
 #2012 visualization
 raw_Std_2012 <- raw_Std %>% 
@@ -59,11 +95,38 @@ raw_ToU_2012 <- raw_ToU %>%
 
 raw_all_2012 <- rbind(raw_Std_2012,raw_ToU_2012)
 
-ggplot(raw_all_2012)+
+raw_ToU_2012_plot<- ggplot(raw_ToU_2012)+
   geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.5)+
   labs(x = "Date and Time", y = "Load (kWh)")+
-  ggtitle("Standard and Time of Use Demand Clustered Households, 2012")+
+  ggtitle("Time of Use Demand Clustered Households, 2012")+
   theme_bw()
+raw_ToU_2012_plot
+ggsave("figures/ToU2012_data.png", plot = raw_ToU_2012_plot,width = 6, height = 4, dpi = 300)
+```
+
+```{r}
+#2013 visualization with ToU tariff
+
+raw_ToU_2013 <- raw_ToU %>% 
+  filter(year(datetime)==2013 & month(datetime)==3 & cluster == "ToU 1")
+
+tariffs_2013 <- tariff_raw %>% 
+  filter(year(datehour)==2013 & month(datehour)==3)
+
+March_ToU1<- ggplot() +
+  geom_line(data = raw_ToU_2013,
+            aes(x = datetime, y = load_kwh),
+            alpha = 0.5) +
+      geom_point(data = tariffs_2013,
+            aes(x = datehour, y = HourRateLevel*0.45, color = HourRate), size = 0.5)+
+  scale_color_manual(
+    values = c("Low" = "darkgreen", "Normal" = "orange", "High" = "red"))+
+  labs(x = "Date and Time", y = "Load (kWh)")+
+  ggtitle("ToU 1 Load and Time of Use Tariff Level, March 2013")+
+  theme_bw()
+
+ggsave("figures/March_ToU1.png", plot = March_ToU1,width = 8, height = 4, dpi = 300)
+
 ```
 
 #Process data
@@ -140,41 +203,69 @@ ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`,
 
 ```{r}
 #std1 decomposition
-Std1_2012_decomp <- ts_Std1_2012 %>% mstl()
+Std1_2012_decomp <- ts_Std1_2012 %>% mstl() 
+Std1_2012_decomp_plot<- autoplot(Std1_2012_decomp)
+
+ggsave("figures/Std1_2012_decomp_plot.png", plot = Std1_2012_decomp_plot,width = 4, height = 5, dpi = 300)
 
 #std2 decomp
 Std2_2012_decomp <- ts_Std2_2012 %>% mstl() 
+Std2_2012_decomp_plot<- autoplot(Std2_2012_decomp)
+
+ggsave("figures/Std2_2012_decomp_plot.png", plot = Std2_2012_decomp_plot,width = 4, height = 5, dpi = 300)
 
 #tou1 decomposition
 ToU1_2012_decomp <- ts_ToU1_2012 %>% mstl() 
+ToU1_2012_decomp_plot<- autoplot(ToU1_2012_decomp)
+
+ggsave("figures/ToU1_2012_decomp_plot.png", plot = ToU1_2012_decomp_plot,width = 4, height = 5, dpi = 300)
 
 #tou2 decomp
 ToU2_2012_decomp <- ts_ToU2_2012 %>% mstl() 
+ToU2_2012_decomp_plot<- autoplot(ToU2_2012_decomp)
+
+ggsave("figures/ToU2_2012_decomp_plot.png", plot = ToU2_2012_decomp_plot,width = 4, height = 5, dpi = 300)
 ```
 
 # ACF and PACF 
 
 ```{r}
 
-plot_grid(
-  autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Std1 Decomp Residuals, 2012"),
-  autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
-)
+#Std 1 ACF PACF
+std1_ACF<- autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="")
+ggsave("figures/std1_ACF.png", plot = std1_ACF,width = 5, height = 3, dpi = 300)
 
-plot_grid(
-  autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Std2 Decomp Residuals, 2012"),
-  autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
-)
 
-plot_grid(
-  autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU1 Decomp Residuals, 2012"),
-  autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
-)
+#removing deterministic trend and seasonal components did not account for all residuals
+std1_PACF<-autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main = "")
+ggsave("figures/std1_PACF.png", plot = std1_PACF,width = 5, height = 3, dpi = 300)
 
-plot_grid(
-  autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="ToU2 Decomp Residuals, 2012"),
-  autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
-)
+#Std 2 ACF PACF
+
+std2_ACF<-autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="")
+ggsave("figures/std2_ACF.png", plot = std2_ACF,width = 5, height = 3, dpi = 300)
+
+std2_PACF<-autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="")
+ggsave("figures/std2_PACF.png", plot = std2_PACF,width = 5, height = 3, dpi = 300)
+
+
+#ToU 1 ACF PACF
+
+ToU1_ACF<- autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="")
+ggsave("figures/ToU1_ACF.png", plot = ToU1_ACF,width = 5, height = 3, dpi = 300)
+
+ToU1_PACF<- autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+ggsave("figures/ToU1_PACF.png", plot = ToU1_PACF,width = 5, height = 3, dpi = 300)
+
+
+#ToU 2 ACF PACF
+
+ToU2_ACF<- autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="")
+ggsave("figures/ToU2_ACF.png", plot = ToU2_ACF,width = 5, height = 3, dpi = 300)
+
+ToU2_PACF<- autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
+ggsave("figures/ToU2_PACF.png", plot = ToU2_PACF,width = 5, height = 3, dpi = 300)
+
 
 ```
 
