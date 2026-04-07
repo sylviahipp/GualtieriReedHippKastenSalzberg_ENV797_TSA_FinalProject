@@ -15,7 +15,7 @@ library(tidyverse)
 library(lubridate)
 library(cowplot)
 library(forecast)
-
+library(gt)
 ```
 
 # Load in the data
@@ -298,6 +298,27 @@ ggsave("figures/ARIMA_F_2013_plots.png", plot = ARIMA_F_2013_plots,width = 15, h
 ```
 
 One thing I am curious about: we were hoping that ToU forecasts would be higher than actual. Not the case based on the ARIMA models, however, there did not appear to be much change in the original plot of all 4 groups between 2012 and 2013 for the ToU groups anyway...
+
+```{r}
+#accuracy scores for ARIMA-Fourier models
+
+ARIMAF_Std1_accuracy <- accuracy(ARIMA_Std1_forecast$mean,ts_Std1_2013)
+
+ARIMAF_Std2_accuracy <- accuracy(ARIMA_Std2_forecast$mean,ts_Std2_2013)
+
+ARIMAF_ToU1_accuracy <- accuracy(ARIMA_ToU1_forecast$mean,ts_ToU1_2013)
+
+ARIMAF_ToU2_accuracy <- accuracy(ARIMA_ToU2_forecast$mean,ts_ToU2_2013)
+
+#scores dataframe
+ARIMAF_Scores <- as.data.frame(rbind(ARIMAF_Std1_accuracy, ARIMAF_Std2_accuracy, ARIMAF_ToU1_accuracy, ARIMAF_ToU2_accuracy))
+row.names(ARIMAF_Scores) <- c("Std1", "Std2","ToU1", "ToU2")
+
+#export scores to png 
+ARIMAF_Table <- gt(ARIMAF_Scores, rownames_to_stub=TRUE)
+gtsave(ARIMAF_Table, "figures/ARIMAF_Table.png")
+```
+
 
 
 ```{r, message=FALSE, warning=FALSE}
