@@ -13,6 +13,7 @@ library(cowplot)
 library(forecast)
 library(gt)
 library(dplyr)
+library(ggplot2)
 ```
 
 # Load in the data
@@ -98,42 +99,165 @@ daily_ToU_2013 <- processed_ToU_2013 %>%
 ```
 
 
-#Convert to ts
+#Convert to daily ts
 ```{r}
 
 #2012
-ts_Std1_2012 <- msts(processed_Std_2012$`Std 1`, 
-                            seasonal.periods =c(24,168,8766),
+ts_Std1_2012_d <- msts(daily_Std_2012$`Std 1_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2012,1,0)) 
 
-ts_Std2_2012 <- msts(processed_Std_2012$`Std 2`, 
-                            seasonal.periods =c(24,168,8766),
+ts_Std2_2012_d <- msts(daily_Std_2012$`Std 2_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2012,1,0)) 
 
-ts_ToU1_2012 <- msts(processed_ToU_2012$`ToU 1`, 
-                            seasonal.periods =c(24,168,8766),
+ts_ToU1_2012_d <- msts(daily_ToU_2012$`ToU 1_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2012,1,0)) 
 
-ts_ToU2_2012 <- msts(processed_ToU_2012$`ToU 2`, 
-                            seasonal.periods =c(24,168,8766),
+ts_ToU2_2012_d <- msts(daily_ToU_2012$`ToU 2_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2012,1,0)) 
 
 #2013
 
-ts_Std1_2013 <- msts(processed_Std_2013$`Std 1`, 
-                            seasonal.periods =c(24,168,8766),
+ts_Std1_2013_d <- msts(daily_Std_2013$`Std 1_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2013,1,0)) 
 
-ts_Std2_2013 <- msts(processed_Std_2013$`Std 2`, 
-                            seasonal.periods =c(24,168,8766),
+ts_Std2_2013_d <- msts(daily_Std_2013$`Std 2_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2013,1,0)) 
 
-ts_ToU1_2013 <- msts(processed_ToU_2013$`ToU 1`, 
-                            seasonal.periods =c(24,168,8766),
+ts_ToU1_2013_d <- msts(daily_ToU_2013$`ToU 1_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2013,1,0)) 
 
-ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`, 
-                            seasonal.periods =c(24,168,8766),
+ts_ToU2_2013_d <- msts(daily_ToU_2013$`ToU 2_avg`, 
+                            seasonal.periods =c(7, 365.25),
                             start=c(2013,1,0))
 
 ```
+
+
+#ARIMA Model
+```{r}
+#ARIMA + Fourier Terms for Std1 2012 training time series
+#Annual, weekly, and daily seasonality likely for electricity load data.
+#hourly load forecasting
+#using less than a year of data to test, not going to include yearly K value >1
+#training subset, using December of 2012, hourly (744)
+n_dec = 31
+ts_Std1_train <- subset(ts_Std1_2012_d, end = length(ts_Std1_2012_d)-n_dec)
+
+ARIMA_Std1_train <- auto.arima(ts_Std1_train, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_train,  K=c(2,12)))
+AIC(ARIMA_Std1_train)
+
+#Forecast the ARIMA model
+ARIMAF_Std1_train_forecast <- forecast(ARIMA_Std1_train,
+                           xreg=fourier(ts_Std1_train, K=c(2,12),h=31), h=31) 
+
+#Plot forecast
+Std1_ARIMA_training_forecast_daily <- autoplot(ARIMAF_Std1_train_forecast) + ylab("Load (kWh)")
+print(Std1_ARIMA_training_forecast_daily)
+
+#Plot forecast on top of actual
+Std1_ARIMA_training_forecast_actual_daily <- autoplot(ts_Std1_2012_d) +
+  autolayer(ARIMAF_Std1_train_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)")
+print(Std1_ARIMA_training_forecast_actual_daily)
+```
+
+
+```{r}
+#ARIMA + Fourier Terms for all Std1 for 2013
+
+ARIMA_Std1 <- auto.arima(ts_Std1_2012_d, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_2012_d,  K=c(2,12)))
+
+ARIMA_Std1_forecast <- forecast(ARIMA_Std1,
+                           xreg=fourier(ts_Std1_2012_d, K=c(2,12),h=365), h=365) 
+
+ARIMA_Std1_plot <- autoplot(ts_Std1_2013_d) +
+  autolayer(ARIMA_Std1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std1")
+print(ARIMA_Std1_plot)
+```
+
+I mean it could be worse. This looks a lot better than the hourly data anyway.
+Might be better if temp is added as an exogenous variable.
+
+```{r}
+#The other 3 groups + visualizations
+#Std2
+ARIMA_Std2 <- auto.arima(ts_Std2_2012_d, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std2_2012_d,  K=c(2,12)))
+
+ARIMA_Std2_forecast <- forecast(ARIMA_Std2,
+                           xreg=fourier(ts_Std2_2012_d, K=c(2,12),h=365), h=365) 
+
+ARIMA_Std2_plot <- autoplot(ts_Std2_2013_d) +
+  autolayer(ARIMA_Std2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std2")
+
+#ToU1
+ARIMA_ToU1 <- auto.arima(ts_ToU1_2012_d, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU1_2012_d,  K=c(2,12)))
+
+ARIMA_ToU1_forecast <- forecast(ARIMA_ToU1,
+                           xreg=fourier(ts_ToU1_2012_d, K=c(2,12),h=365), h=365) 
+
+ARIMA_ToU1_plot <- autoplot(ts_ToU1_2013_d) +
+  autolayer(ARIMA_ToU1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU1")
+
+#ToU2
+ARIMA_ToU2 <- auto.arima(ts_ToU2_2012_d, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU2_2012_d,  K=c(2,12)))
+
+ARIMA_ToU2_forecast <- forecast(ARIMA_ToU2,
+                           xreg=fourier(ts_ToU2_2012_d, K=c(2,12),h=365), h=365) 
+
+ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013_d) +
+  autolayer(ARIMA_ToU2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU2")
+
+#ARIMA Plot visualization
+ARIMA_F_2013_plots_daily <- plot_grid(ARIMA_Std1_plot,
+          ARIMA_Std2_plot,
+          ARIMA_ToU1_plot,
+          ARIMA_ToU2_plot,
+          nrow =2, ncol = 2)
+print(ARIMA_F_2013_plots_daily)
+```
+
+
+```{r}
+#accuracy scores for ARIMA-Fourier models
+ARIMAF_Std1_accuracy <- accuracy(ARIMA_Std1_forecast$mean,ts_Std1_2013_d)
+
+ARIMAF_Std2_accuracy <- accuracy(ARIMA_Std2_forecast$mean,ts_Std2_2013_d)
+
+ARIMAF_ToU1_accuracy <- accuracy(ARIMA_ToU1_forecast$mean,ts_ToU1_2013_d)
+
+ARIMAF_ToU2_accuracy <- accuracy(ARIMA_ToU2_forecast$mean,ts_ToU2_2013_d)
+
+#scores dataframe
+ARIMAF_Scores <- as.data.frame(rbind(ARIMAF_Std1_accuracy, ARIMAF_Std2_accuracy, ARIMAF_ToU1_accuracy, ARIMAF_ToU2_accuracy))
+row.names(ARIMAF_Scores) <- c("Std1", "Std2","ToU1", "ToU2")
+
+print(ARIMAF_Scores)
+```
+
+```{r}
+#TBATS for Std1
+TBATS_Std1_daily <- tbats(ts_Std1_2012_d)
+
+TBATS_Std1_forecast <- forecast(TBATS_Std1_daily, h=365)
+
+print(Std1_TBATS_2013_plot <- autoplot(ts_Std1_2013_d) +
+  autolayer(TBATS_Std1_forecast, series="TBATS",PI=FALSE)+
+  ylab("Load (kWh)") + labs(title="TBATS Std1"))
+```
+
