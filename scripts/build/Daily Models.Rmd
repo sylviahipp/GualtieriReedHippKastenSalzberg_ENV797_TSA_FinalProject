@@ -1,0 +1,139 @@
+---
+title: "Daily Models"
+output: html_document
+---
+
+# setup
+```{r}
+library(here)
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+library(forecast)
+library(gt)
+library(dplyr)
+```
+
+# Load in the data
+```{r}
+#load in data
+#ignore my wd. chunk was overriding what I set in the console, # out if not Sadie
+setwd("/Users/sadiekasten/Desktop/Time Series/R files/final proj")
+raw_Std <- read.csv(file="data/processed/Std_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("Std",cluster))
+
+
+raw_ToU <- read.csv(file="data/processed/ToU_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("ToU",cluster))
+```
+
+
+#Process data into hourly dataframes
+
+```{r}
+processed_Std_2012 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2012)
+
+daily_Std_2012 <- processed_Std_2012 %>%
+  mutate(date = as.Date(datetime)) %>%
+  group_by(date) %>%
+  summarise(
+    `Std 1_avg` = mean(`Std 1`, na.rm = TRUE),
+    `Std 2_avg` = mean(`Std 2`, na.rm = TRUE),
+    .groups = "drop")
+
+processed_ToU_2012 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2012)
+
+daily_ToU_2012 <- processed_ToU_2012 %>%
+  mutate(date = as.Date(datetime)) %>%
+  group_by(date) %>%
+  summarise(
+    `ToU 1_avg` = mean(`ToU 1`, na.rm = TRUE),
+    `ToU 2_avg` = mean(`ToU 2`, na.rm = TRUE),
+    .groups = "drop")
+
+processed_Std_2013 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2013)
+
+daily_Std_2013 <- processed_Std_2013 %>%
+  mutate(date = as.Date(datetime)) %>%
+  group_by(date) %>%
+  summarise(
+    `Std 1_avg` = mean(`Std 1`, na.rm = TRUE),
+    `Std 2_avg` = mean(`Std 2`, na.rm = TRUE),
+    .groups = "drop")
+
+processed_ToU_2013 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2013)
+
+daily_ToU_2013 <- processed_ToU_2013 %>%
+  mutate(date = as.Date(datetime)) %>%
+  group_by(date) %>%
+  summarise(
+    `ToU 1_avg` = mean(`ToU 1`, na.rm = TRUE),
+    `ToU 2_avg` = mean(`ToU 2`, na.rm = TRUE),
+    .groups = "drop")
+```
+
+
+#Convert to ts
+```{r}
+
+#2012
+ts_Std1_2012 <- msts(processed_Std_2012$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_Std2_2012 <- msts(processed_Std_2012$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU1_2012 <- msts(processed_ToU_2012$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU2_2012 <- msts(processed_ToU_2012$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+#2013
+
+ts_Std1_2013 <- msts(processed_Std_2013$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_Std2_2013 <- msts(processed_Std_2013$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU1_2013 <- msts(processed_ToU_2013$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0))
+
+```
