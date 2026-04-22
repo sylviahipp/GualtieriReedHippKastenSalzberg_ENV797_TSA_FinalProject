@@ -1,0 +1,396 @@
+---
+title: "FinalReport"
+author: "Maeve Gualtieri-Reed, Sylvia Hipp, Sadie Kasten, Josh Salzberg"
+date: "2026-04-22"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Introduction
+
+# Exploratory Analysis
+
+## Set up
+```{r}
+library(here)
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+library(forecast)
+library(gt)
+library(readxl)
+```
+
+
+## Load in Data
+```{r}
+#load in data
+
+raw_Std <- read.csv(file="./data/processed/Std_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("Std",cluster))
+
+
+raw_ToU <- read.csv(file="./data/processed/ToU_household_load.csv",
+                            header=TRUE) %>%
+  mutate(datetime = ymd_hms(datetime_utc, tz = "UTC")) %>% 
+  mutate(cluster = as.character(cluster)) %>% 
+  select("datetime","cluster","load_kwh") %>% 
+  mutate(cluster = paste("ToU",cluster))
+
+tariff_raw <- read_xlsx(path="./data/raw/Tariffs.xlsx") %>% 
+   mutate(
+    date = as.Date(TariffDateTime),         
+    hour = hour(TariffDateTime),            
+    minute = minute(TariffDateTime)         
+  ) %>% 
+  mutate(
+    datehour = floor_date(TariffDateTime, unit = "hour")
+  ) %>% 
+  select("datehour","minute","Tariff") %>% 
+  pivot_wider(
+    names_from = minute,
+    values_from = Tariff
+  ) %>% 
+  rename("Min0" = `0`, "Min30" = `30`) %>% 
+  mutate(
+    HourRate = case_when(
+      (Min0 == "High" & Min30 != "Low") | (Min30 == "High" & Min0 != "Low") ~ "High",
+      (Min0 == "Low" & Min30 != "High") | (Min30 == "Low" & Min0 != "High") ~ "Low",
+      TRUE ~ "Normal"
+    )
+  ) %>% 
+  select("datehour","HourRate") %>% 
+  mutate(HourRate = factor(HourRate,
+                      levels = c("Low", "Normal", "High"),
+                      ordered = TRUE)) %>% 
+  mutate(HourRateLevel = as.numeric(HourRate))
+```
+
+## Process Data
+```{r}
+processed_Std_2012 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2012)
+
+processed_ToU_2012 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2012)
+
+processed_Std_2013 <- raw_Std %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","Std 1","Std 2") %>% 
+  filter(year(datetime) == 2013)
+
+processed_ToU_2013 <- raw_ToU %>%
+  pivot_wider(names_from = cluster,
+              values_from = load_kwh) %>% 
+  select("datetime","ToU 1","ToU 2") %>% 
+  filter(year(datetime) == 2013)
+```
+
+## Convert to TS
+```{r}
+#2012
+ts_Std1_2012 <- msts(processed_Std_2012$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_Std2_2012 <- msts(processed_Std_2012$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU1_2012 <- msts(processed_ToU_2012$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+ts_ToU2_2012 <- msts(processed_ToU_2012$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2012,1,0)) 
+
+#2013
+
+ts_Std1_2013 <- msts(processed_Std_2013$`Std 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_Std2_2013 <- msts(processed_Std_2013$`Std 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU1_2013 <- msts(processed_ToU_2013$`ToU 1`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0)) 
+
+ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`, 
+                            seasonal.periods =c(24,168,8766),
+                            start=c(2013,1,0))
+```
+
+
+# Model Fitting
+
+```{r}
+#Std1
+ARIMA_Std1 <- auto.arima(ts_Std1_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std1_2012,  K=c(5,3,1)))
+
+ARIMA_Std1_forecast <- forecast(ARIMA_Std1,
+                           xreg=fourier(ts_Std1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_Std1_plot <- autoplot(ts_Std1_2013) +
+  autolayer(ARIMA_Std1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std1")
+
+#Std2
+ARIMA_Std2 <- auto.arima(ts_Std2_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_Std2_2012,  K=c(5,3,1)))
+
+ARIMA_Std2_forecast <- forecast(ARIMA_Std2,
+                           xreg=fourier(ts_Std2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_Std2_plot <- autoplot(ts_Std2_2013) +
+  autolayer(ARIMA_Std2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std2")
+
+#ToU1
+ARIMA_ToU1 <- auto.arima(ts_ToU1_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU1_2012,  K=c(5,3,1)))
+
+ARIMA_ToU1_forecast <- forecast(ARIMA_ToU1,
+                           xreg=fourier(ts_ToU1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_ToU1_plot <- autoplot(ts_ToU1_2013) +
+  autolayer(ARIMA_ToU1_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU1")
+
+#ToU2
+ARIMA_ToU2 <- auto.arima(ts_ToU2_2012, seasonal=FALSE, lambda=0,
+                             xreg=fourier(ts_ToU2_2012,  K=c(5,3,1)))
+
+ARIMA_ToU2_forecast <- forecast(ARIMA_ToU2,
+                           xreg=fourier(ts_ToU2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
+  autolayer(ARIMA_ToU2_forecast, series="ARIMA_FOURIER",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU2")
+```
+
+```{r}
+
+```
+
+
+# Analysis
+
+```{r}
+forecast_Std1 <- ARIMA_Std1_forecast$mean
+actual_Std1 <- processed_Std_2013$`Std 1`
+
+tariff_Std1 <- cbind(tariff_raw, forecast_Std1, actual_Std1) %>% 
+  mutate(forecast = as.numeric(forecast_Std1))
+
+forecast_Std2 <- ARIMA_Std2_forecast$mean
+actual_Std2 <- processed_Std_2013$`Std 2`
+
+tariff_Std2 <- cbind(tariff_raw, forecast_Std2, actual_Std2) %>% 
+  mutate(forecast = as.numeric(forecast_Std2))
+
+forecast_ToU1 <- ARIMA_ToU1_forecast$mean
+actual_ToU1 <- processed_ToU_2013$`ToU 1`
+
+tariff_ToU1 <- cbind(tariff_raw, forecast_ToU1, actual_ToU1) %>% 
+  mutate(forecast = as.numeric(forecast_ToU1))
+
+forecast_ToU2 <- ARIMA_ToU2_forecast$mean
+actual_ToU2 <- processed_ToU_2013$`ToU 2`
+
+tariff_ToU2 <- cbind(tariff_raw, forecast_ToU2, actual_ToU2) %>% 
+  mutate(forecast = as.numeric(forecast_ToU2))
+
+```
+
+```{r}
+
+#High
+
+tariff_comp_Std1_high <- tariff_Std1 %>% 
+  filter(HourRate == "High") %>% 
+  mutate(forecast_actual = forecast_Std1-actual_Std1) %>% 
+  filter(forecast_actual > -1) # remove outliers
+
+tariff_comp_Std2_high <- tariff_Std2 %>% 
+  filter(HourRate == "High") %>% 
+  mutate(forecast_actual = forecast_Std2-actual_Std2)
+
+tariff_comp_ToU1_high <- tariff_ToU1 %>% 
+  filter(HourRate == "High") %>% 
+  mutate(forecast_actual = forecast_ToU1-actual_ToU1)
+
+tariff_comp_ToU2_high <- tariff_ToU2 %>% 
+  filter(HourRate == "High") %>% 
+  mutate(forecast_actual = forecast_ToU2-actual_ToU2)
+
+ggplot() +
+  geom_density(data = tariff_comp_Std1_high,
+               aes(x = forecast_actual, color = "Std1"), alpha = 0.5) +
+  geom_density(data = tariff_comp_Std2_high,
+               aes(x = forecast_actual, color = "Std2"), alpha = 0.5) +
+  geom_density(data = tariff_comp_ToU1_high,
+               aes(x = forecast_actual, color = "ToU1"), alpha = 0.5) +
+  geom_density(data = tariff_comp_ToU2_high,
+               aes(x = forecast_actual, color = "ToU2"), alpha = 0.5) +
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Std1" = "goldenrod1",
+      "Std2" = "red",
+      "ToU1" = "darkgreen",
+      "ToU2" = "blue"
+    )
+  )+
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("Forecasted Versus Actual Demand During High Tariff Hours, 2013")
+
+```
+
+```{r}
+#Low
+
+tariff_comp_Std1_Low <- tariff_Std1 %>% 
+  filter(HourRate == "Low") %>% 
+  mutate(forecast_actual = forecast_Std1-actual_Std1) %>% 
+  filter(forecast_actual > -1) # remove outliers
+
+tariff_comp_Std2_Low <- tariff_Std2 %>% 
+  filter(HourRate == "Low") %>% 
+  mutate(forecast_actual = forecast_Std2-actual_Std2)
+
+tariff_comp_ToU1_Low <- tariff_ToU1 %>% 
+  filter(HourRate == "Low") %>% 
+  mutate(forecast_actual = forecast_ToU1-actual_ToU1)
+
+tariff_comp_ToU2_Low <- tariff_ToU2 %>% 
+  filter(HourRate == "Low") %>% 
+  mutate(forecast_actual = forecast_ToU2-actual_ToU2)
+
+ggplot() +
+  geom_density(data = tariff_comp_Std1_Low,
+               aes(x = forecast_actual, color = "Std1"), alpha = 0.5) +
+  geom_density(data = tariff_comp_Std2_Low,
+               aes(x = forecast_actual, color = "Std2"), alpha = 0.5) +
+  geom_density(data = tariff_comp_ToU1_Low,
+               aes(x = forecast_actual, color = "ToU1"), alpha = 0.5) +
+  geom_density(data = tariff_comp_ToU2_Low,
+               aes(x = forecast_actual, color = "ToU2"), alpha = 0.5) +
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Std1" = "goldenrod1",
+      "Std2" = "red",
+      "ToU1" = "darkgreen",
+      "ToU2" = "blue"
+    )
+  )+
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("Forecasted Versus Actual Demand During Low Tariff Hours, 2013")
+```
+
+
+```{r}
+#Normal
+
+tariff_comp_Std1_Normal <- tariff_Std1 %>% 
+  filter(HourRate == "Normal") %>% 
+  mutate(forecast_actual = forecast_Std1-actual_Std1) %>% 
+  filter(forecast_actual > -1) # remove outliers
+
+tariff_comp_Std2_Normal <- tariff_Std2 %>% 
+  filter(HourRate == "Normal") %>% 
+  mutate(forecast_actual = forecast_Std2-actual_Std2)
+
+tariff_comp_ToU1_Normal <- tariff_ToU1 %>% 
+  filter(HourRate == "Normal") %>% 
+  mutate(forecast_actual = forecast_ToU1-actual_ToU1)
+
+tariff_comp_ToU2_Normal <- tariff_ToU2 %>% 
+  filter(HourRate == "Normal") %>% 
+  mutate(forecast_actual = forecast_ToU2-actual_ToU2)
+
+ggplot() +
+  geom_density(data = tariff_comp_Std1_Normal,
+               aes(x = forecast_actual, color = "Std1"), alpha = 0.5) +
+  geom_density(data = tariff_comp_Std2_Normal,
+               aes(x = forecast_actual, color = "Std2"), alpha = 0.5) +
+  geom_density(data = tariff_comp_ToU1_Normal,
+               aes(x = forecast_actual, color = "ToU1"), alpha = 0.5) +
+  geom_density(data = tariff_comp_ToU2_Normal,
+               aes(x = forecast_actual, color = "ToU2"), alpha = 0.5) +
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Std1" = "goldenrod1",
+      "Std2" = "red",
+      "ToU1" = "darkgreen",
+      "ToU2" = "blue"
+    )
+  )+
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("Forecasted Versus Actual Demand During Normal Tariff Hours, 2013")
+```
+
+```{r}
+std1 <- ggplot() +
+  geom_density(data = tariff_comp_Std1_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_Std1_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_Std1_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("Std1")
+
+std2 <- ggplot() +
+  geom_density(data = tariff_comp_Std2_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_Std2_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_Std2_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("Std2")
+
+
+tou1 <- ggplot() +
+  geom_density(data = tariff_comp_ToU1_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_ToU1_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_ToU1_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("ToU1")
+
+tou2 <- ggplot() +
+  geom_density(data = tariff_comp_ToU2_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_ToU2_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_ToU2_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
+  xlab("Forecasted - Actual Demand")+
+  ggtitle("ToU2")
+
+cowplot::plot_grid(std1,std2,tou1,tou2)
+```
+

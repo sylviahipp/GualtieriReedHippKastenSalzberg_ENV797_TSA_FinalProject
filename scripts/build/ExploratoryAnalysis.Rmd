@@ -270,5 +270,13 @@ ggsave("figures/ToU2_PACF.png", plot = ToU2_PACF,width = 3, height = 3, dpi = 30
 
 ```
 
+```{r}
+#Tariff type by hour
+ggplot(tariff_raw, aes(x = factor(hour(datehour)), fill = HourRate)) +
+  geom_bar() +
+  scale_fill_manual(
+    values = c("Low" = "darkgreen", "Normal" = "orange", "High" = "red"))+
+  labs(x = "Hour", y = "Count") +
+  theme_minimal()
 ```
 
