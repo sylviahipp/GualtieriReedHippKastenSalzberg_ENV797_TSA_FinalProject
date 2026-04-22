@@ -15,6 +15,7 @@ library(tidyverse)
 library(lubridate)
 library(cowplot)
 library(forecast)
+library(readxl)
 ```
 
 # Load in the data
@@ -233,38 +234,38 @@ ggsave("figures/ToU2_2012_decomp_plot.png", plot = ToU2_2012_decomp_plot,width =
 
 #Std 1 ACF PACF
 std1_ACF<- autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="")
-ggsave("figures/std1_ACF.png", plot = std1_ACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/std1_ACF.png", plot = std1_ACF,width = 3, height = 3, dpi = 300)
 
 
 #removing deterministic trend and seasonal components did not account for all residuals
 std1_PACF<-autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main = "")
-ggsave("figures/std1_PACF.png", plot = std1_PACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/std1_PACF.png", plot = std1_PACF,width = 3, height = 3, dpi = 300)
 
 #Std 2 ACF PACF
 
 std2_ACF<-autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="")
-ggsave("figures/std2_ACF.png", plot = std2_ACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/std2_ACF.png", plot = std2_ACF,width = 3, height = 3, dpi = 300)
 
 std2_PACF<-autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="")
-ggsave("figures/std2_PACF.png", plot = std2_PACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/std2_PACF.png", plot = std2_PACF,width = 3, height = 3, dpi = 300)
 
 
 #ToU 1 ACF PACF
 
 ToU1_ACF<- autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="")
-ggsave("figures/ToU1_ACF.png", plot = ToU1_ACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/ToU1_ACF.png", plot = ToU1_ACF,width = 3, height = 3, dpi = 300)
 
 ToU1_PACF<- autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
-ggsave("figures/ToU1_PACF.png", plot = ToU1_PACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/ToU1_PACF.png", plot = ToU1_PACF,width = 3, height = 3, dpi = 300)
 
 
 #ToU 2 ACF PACF
 
 ToU2_ACF<- autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="")
-ggsave("figures/ToU2_ACF.png", plot = ToU2_ACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/ToU2_ACF.png", plot = ToU2_ACF,width = 3, height = 3, dpi = 300)
 
 ToU2_PACF<- autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
-ggsave("figures/ToU2_PACF.png", plot = ToU2_PACF,width = 5, height = 3, dpi = 300)
+ggsave("figures/ToU2_PACF.png", plot = ToU2_PACF,width = 3, height = 3, dpi = 300)
 
 
 ```
