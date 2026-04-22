@@ -1,0 +1,62 @@
+---
+title: "Smart Meters -- Smart Behaviors? An Analysis of London Household Energy Use in Response to Dynamic Time-of-Use Tariffs"
+subtitle: "ENV 797: Time Series Analysis Final Project" 
+author: Maeve Gualtieri-Reed, Sylvia Hipp, Sadie Kasten, Josh Salzberg
+date: April 24, 2026
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r Load Packages, message=FALSE, warning=FALSE, include=FALSE}
+library(here)
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+library(forecast)
+library(gt)
+```
+
+# Introduction
+
+
+
+
+# Dataset Information
+
+
+
+
+
+
+
+
+
+
+
+_____________________________
+**From Canvas**: Report Sections: 
+
+#### Introduction, Motivation, Relevance, Objectives
+
+Write a few paragraphs detailing the rationale for your study. This should include both the context of the topic as well as a rationale for your choice of dataset (reason for location, variables, etc.). You may choose to include citations if you like or any other reference you may have used during the project (optional).
+
+#### Dataset information [**Sylvia**]
+
+Provide information on how the dataset for this analysis were collected (source), the data contained in the dataset (format). Describe how you wrangled/processed your dataset to get the time series object.
+
+Add a table that summarizes your data structure (variables, units, ranges and/or central tendencies, data source if multiple are used, etc.). This table should inserted as a `kable` function in an R chunk. Just show the first 10 rows of your data. Do not include the code used to generate your table.
+
+
+#### Analysis (Methods and Models)
+
+Describe the analysis and tests that were performed. Described the components of the time series you identified. List any packages and functions used. Include visualizations of your dataset (i.e. time series plot, ACF, PACF, etc). 
+
+Format your R chunks so that graphs are displayed but code is not displayed. Accompany these graphs with text sections that describe the visualizations and provide context for further analyses.
+
+Each figure should be accompanied by a caption, and referenced within the text if applicable.
+
+#### Summary and Conclusions
+
+Summarize your major findings from your analyses in a few paragraphs and plots. What conclusions do you draw from your findings? Any insights on how to improve the model?
