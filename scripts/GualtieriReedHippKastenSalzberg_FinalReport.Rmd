@@ -26,10 +26,10 @@ library(forecast)
 library(gt)
 library(readxl)
 library(knitr)
-library(kable_extra)
+library(kableExtra)
 ```
 
-```{r Set global theme}
+```{r Set global theme, include=FALSE}
 # set theme for formatting consistency
 global_theme <- theme_classic() +
   theme(plot.title = element_text(size = 11, hjust = 0.5, face = "bold"), #Adjust title
@@ -45,11 +45,10 @@ global_theme <- theme_classic() +
 # set theme globally
 theme_set(global_theme)
 
-## Add to any Kables: 
+# **Add to any Kables**: 
 # row_spec(0, align = "c", bold = TRUE) %>% 
 #   kable_classic() 
 ```
-
 
 # Introduction
 
@@ -70,21 +69,36 @@ household_load_raw <- read.csv(here("data/raw/ExampleHouseholdLoad.csv")) %>%
 
 The dataset for this project was obtained from a study done by UK Power Networks titled SmartMeter Energy Consumption Data in London Households.[^UKPowerNetworks] The dataset includes energy consumption readings every half hour over the period November 2011 to February 2014. The purpose of the study was to understand how price signals could support higher renewable penetration as well as reduce stress on local distribution grids. 5,566 households participated in the study and were selected as a balanced sample to represent the electricity usage of the Greater London population. 
 
-1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A dataset containing the tariff schedule throughout 2013 was also obtained, and a glimpse of the raw tariff data is shown in **[[Table YY]]**. 
+1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table YY]]**. 
 
 ```{r Table XX, echo=FALSE, message=FALSE, warning=FALSE, }
+# household load
 kable(household_load_raw %>% head(n=5), 
       caption = "Household Load Raw Data") %>% 
   row_spec(0, align = "c", bold = TRUE) %>% 
   kable_classic()
-```
 
+# tariffs
+kable(tariffs_raw %>% head(n=5), 
+      caption = "Tariff Schedule Raw Data") %>% 
+  row_spec(0, align = "c", bold = TRUE) %>% 
+  kable_classic()
+```
 
 
 [^UKPowerNetworks]: UK Power Networks. (2015). *SmartMeter energy consumption data in London households.* London Datastore. https://data.london.gov.uk/dataset/smartmeter-energy-consumption-data-in-london-households-vqm0d/.
 
 
 ## Data Wrangling
+
+Both the household load and tariff schedule data were aggregated to the hour, as half-hour increments complicated the time series seasonality without adding much incremental benefits to characterizing household behavior. In cases where the tariff level differed between the top and bottom of the hour, the following logic was applied to infer tariff level for the whole hour: 
+
+1) High and Normal -> High
+2) Low and Normal -> Low
+3) High and Low -> Normal
+
+Household load was given as kWh per half hour for each household. To aggregate at the hourly level, 
+
 
 [[Aggregating to the hour for both tariff dataset and household load dataset]][^PythonNote]
 
