@@ -1,0 +1,19 @@
+---
+title: "Smart Meters -- Smart Behaviors? An Analysis of London Household Energy Use in Response to Dynamic Time-of-Use Tariffs"
+subtitle: "ENV 797: Time Series Analysis Final Project" 
+author: Maeve Gualtieri-Reed, Sylvia Hipp, Sadie Kasten, Josh Salzberg
+date: April 24, 2026
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r Load Packages, message=FALSE, warning=FALSE, include=FALSE}
+library(here)
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+library(forecast)
+library(gt)
+```

@@ -8,6 +8,14 @@ editor_options:
   chunk_output_type: console
 ---
 
+\newpage
+\tableofcontents 
+\newpage
+\listoftables 
+\listoffigures 
+\newpage
+
+
 ```{r Load Packages, message=FALSE, warning=FALSE, include=FALSE}
 library(here)
 library(tseries)
@@ -16,7 +24,32 @@ library(lubridate)
 library(cowplot)
 library(forecast)
 library(gt)
+library(readxl)
+library(knitr)
+library(kable_extra)
 ```
+
+```{r Set global theme}
+# set theme for formatting consistency
+global_theme <- theme_classic() +
+  theme(plot.title = element_text(size = 11, hjust = 0.5, face = "bold"), #Adjust title
+        plot.subtitle = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 9), # Adjust x-axis values
+        axis.text.y = element_text(size = 9), # Adjust y-axis values
+        axis.title.x = element_text(size = 10.5), # Adjust x-axis title
+        axis.title.y = element_text(size = 10.5), # Adjust y-axis title
+        legend.position = "bottom", # Define legend position
+        legend.text = element_text(size = 9), # Define legend entry sizes
+        legend.title = element_text(size = 9)) # Define legend name sizes
+
+# set theme globally
+theme_set(global_theme)
+
+## Add to any Kables: 
+# row_spec(0, align = "c", bold = TRUE) %>% 
+#   kable_classic() 
+```
+
 
 # Introduction
 
@@ -25,13 +58,54 @@ library(gt)
 
 # Dataset Information
 
+## Raw Data
+
+```{r Read Raw Data, message=FALSE, warning=FALSE, include=FALSE}
+tariffs_raw <- read_excel(here("data/raw/Tariffs.xlsx"))
+
+household_load_raw <- read.csv(here("data/raw/ExampleHouseholdLoad.csv")) %>% 
+  filter(str_detect(DateTime, "^2013-01-01")) %>% 
+  rename("kWhPerHalfHour" = 4)
+```
+
+The dataset for this project was obtained from a study done by UK Power Networks titled SmartMeter Energy Consumption Data in London Households.[^UKPowerNetworks] The dataset includes energy consumption readings every half hour over the period November 2011 to February 2014. The purpose of the study was to understand how price signals could support higher renewable penetration as well as reduce stress on local distribution grids. 5,566 households participated in the study and were selected as a balanced sample to represent the electricity usage of the Greater London population. 
+
+1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A dataset containing the tariff schedule throughout 2013 was also obtained, and a glimpse of the raw tariff data is shown in **[[Table YY]]**. 
+
+```{r Table XX, echo=FALSE, message=FALSE, warning=FALSE, }
+kable(household_load_raw %>% head(n=5), 
+      caption = "Household Load Raw Data") %>% 
+  row_spec(0, align = "c", bold = TRUE) %>% 
+  kable_classic()
+```
 
 
 
+[^UKPowerNetworks]: UK Power Networks. (2015). *SmartMeter energy consumption data in London households.* London Datastore. https://data.london.gov.uk/dataset/smartmeter-energy-consumption-data-in-london-households-vqm0d/.
+
+
+## Data Wrangling
+
+[[Aggregating to the hour for both tariff dataset and household load dataset]][^PythonNote]
+
+[[Removal of missing data + restrict to only the two whole years + separating into Std / ToU customers]]
+
+[[K-Means Clustering]]
+
+[^PythonNote]: The initial dataset of household load included over 200 million observations representing 2+ years of data at half-hour increments for over 5,500 households. To make the data more manageable in R, the data was initially wrangled in Python then exported to R. The code for this initial data wrangling can be found in `~/scripts/build/00_lcl_data_build.ipynb`.  
+
+
+# Analysis
+
+## Methods 
 
 
 
+## Models
 
+
+
+# Summary and Conclusions
 
 
 
