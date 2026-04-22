@@ -16,6 +16,7 @@ library(lubridate)
 library(cowplot)
 library(forecast)
 library(gt)
+library(prophet)
 ```
 
 # Load in the data
@@ -356,10 +357,6 @@ Not better at representing the daily seasonality that goes on, spiking the load.
 
 
 ```{r}
-#Prophet
-```
-
-```{r}
 #NNETAR for all 4 groups
 # 2013 had 8760 hours 
 
@@ -433,5 +430,23 @@ NNETAR_ToU2_accuracy <- accuracy(NNETAR_ToU2_forecast$mean,ts_ToU2_2013)
 #scores dataframe
 NNETAR_Scores <- as.data.frame(rbind(NNETAR_Std1_accuracy, NNETAR_Std2_accuracy, NNETAR_ToU1_accuracy, NNETAR_ToU2_accuracy))
 row.names(NNETAR_Scores) <- c("Std1", "Std2","ToU1", "ToU2")
+```
+
+Based on table / MAPE scores, the NNETAR model isnt any better than the ARIMA + F but is better than the TBATS.
+
+
+```{r}
+#Prophet: Dataframes for Std1
+df_Std1_2012 <- processed_Std_2012 %>%
+  select(ds = "datetime", y = "Std 1")
+
+df_Std2_2012 <- processed_Std_2012 %>%
+  select(ds = "datetime", y = "Std 2")
+
+df_Std1_2013 <- processed_Std_2013 %>%
+  select(ds = "datetime", y = "Std 1")
+
+df_Std2_2013 <- processed_Std_2013 %>%
+  select(ds = "datetime", y = "Std 2")
 ```
 
