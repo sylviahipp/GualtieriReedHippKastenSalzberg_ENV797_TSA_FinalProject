@@ -359,3 +359,79 @@ Not better at representing the daily seasonality that goes on, spiking the load.
 #Prophet
 ```
 
+```{r}
+#NNETAR for all 4 groups
+# 2013 had 8760 hours 
+
+#Std1
+NNETAR_Std1 <- nnetar(ts_Std1_2012, p=10, P=0,
+                             xreg=fourier(ts_Std1_2012,  K=c(5,3,1)))
+
+NNETAR_Std1_forecast <- forecast(NNETAR_Std1,
+                           xreg=fourier(ts_Std1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+NNETAR_Std1_plot <- autoplot(ts_Std1_2013) +
+  autolayer(NNETAR_Std1_forecast, series="NNETAR",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std1")
+
+#Std2
+NNETAR_Std2 <- nnetar(ts_Std2_2012, p=10, P=0,
+                             xreg=fourier(ts_Std2_2012,  K=c(5,3,1)))
+
+NNETAR_Std2_forecast <- forecast(NNETAR_Std2,
+                           xreg=fourier(ts_Std2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+NNETAR_Std2_plot <- autoplot(ts_Std2_2013) +
+  autolayer(NNETAR_Std2_forecast, series="NNETAR",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual Std2")
+
+#ToU1
+NNETAR_ToU1 <- nnetar(ts_ToU1_2012, p=10, P=0,
+                             xreg=fourier(ts_ToU1_2012,  K=c(5,3,1)))
+
+NNETAR_ToU1_forecast <- forecast(NNETAR_ToU1,
+                           xreg=fourier(ts_ToU1_2012, K=c(5,3,1),h=8760), h=8760) 
+
+NNETAR_ToU1_plot <- autoplot(ts_ToU1_2013) +
+  autolayer(NNETAR_ToU1_forecast, series="NNETAR",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU1")
+
+#ToU2
+NNETAR_ToU2 <- nnetar(ts_ToU2_2012, p=10, P=0,
+                             xreg=fourier(ts_ToU2_2012,  K=c(5,3,1)))
+
+NNETAR_ToU2_forecast <- forecast(NNETAR_ToU2,
+                           xreg=fourier(ts_ToU2_2012, K=c(5,3,1),h=8760), h=8760) 
+
+NNETAR_ToU2_plot <- autoplot(ts_ToU2_2013) +
+  autolayer(NNETAR_ToU2_forecast, series="NNETAR",PI=FALSE) +
+  ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU2")
+```
+
+```{r}
+#NNETAR Plot visualization
+
+NNETAR_2013_plots <- plot_grid(NNETAR_Std1_plot,
+          NNETAR_Std2_plot,
+          NNETAR_ToU1_plot,
+          NNETAR_ToU2_plot,
+          nrow =2, ncol = 2)
+print(NNETAR_2013_plots)
+```
+
+```{r}
+#accuracy scores for ARIMA-Fourier models
+
+NNETAR_Std1_accuracy <- accuracy(NNETAR_Std1_forecast$mean,ts_Std1_2013)
+
+NNETAR_Std2_accuracy <- accuracy(NNETAR_Std2_forecast$mean,ts_Std2_2013)
+
+NNETAR_ToU1_accuracy <- accuracy(NNETAR_ToU1_forecast$mean,ts_ToU1_2013)
+
+NNETAR_ToU2_accuracy <- accuracy(NNETAR_ToU2_forecast$mean,ts_ToU2_2013)
+
+#scores dataframe
+NNETAR_Scores <- as.data.frame(rbind(NNETAR_Std1_accuracy, NNETAR_Std2_accuracy, NNETAR_ToU1_accuracy, NNETAR_ToU2_accuracy))
+row.names(NNETAR_Scores) <- c("Std1", "Std2","ToU1", "ToU2")
+```
+
