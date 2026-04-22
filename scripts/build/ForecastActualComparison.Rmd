@@ -1,6 +1,6 @@
 ---
-title: "FinalReport"
-author: "Maeve Gualtieri-Reed, Sylvia Hipp, Sadie Kasten, Josh Salzberg"
+title: "ForecastActualComparison"
+author: "Maeve Gualtieri-Reed"
 date: "2026-04-22"
 output: pdf_document
 editor_options: 
@@ -194,38 +194,31 @@ ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
 # Analysis
 
 ```{r}
-forecast_Std1 <- as.numeric(ARIMA_Std1_forecast$mean)
+forecast_Std1 <- ARIMA_Std1_forecast$mean
 actual_Std1 <- processed_Std_2013$`Std 1`
 
-tariff_Std1 <- cbind(tariff_raw, forecast_Std1, actual_Std1)
+tariff_Std1 <- cbind(tariff_raw, forecast_Std1, actual_Std1) %>% 
+  mutate(forecast = as.numeric(forecast_Std1))
 
-forecast_Std2 <- as.numeric(ARIMA_Std2_forecast$mean)
+forecast_Std2 <- ARIMA_Std2_forecast$mean
 actual_Std2 <- processed_Std_2013$`Std 2`
 
-tariff_Std2 <- cbind(tariff_raw, forecast_Std2, actual_Std2) 
+tariff_Std2 <- cbind(tariff_raw, forecast_Std2, actual_Std2) %>% 
+  mutate(forecast = as.numeric(forecast_Std2))
 
-forecast_ToU1 <- as.numeric(ARIMA_ToU1_forecast$mean)
+forecast_ToU1 <- ARIMA_ToU1_forecast$mean
 actual_ToU1 <- processed_ToU_2013$`ToU 1`
 
-tariff_ToU1 <- cbind(tariff_raw, forecast_ToU1, actual_ToU1) 
+tariff_ToU1 <- cbind(tariff_raw, forecast_ToU1, actual_ToU1) %>% 
+  mutate(forecast = as.numeric(forecast_ToU1))
 
-forecast_ToU2 <- as.numeric(ARIMA_ToU2_forecast$mean)
+forecast_ToU2 <- ARIMA_ToU2_forecast$mean
 actual_ToU2 <- processed_ToU_2013$`ToU 2`
 
-tariff_ToU2 <- cbind(tariff_raw, forecast_ToU2, actual_ToU2) 
-
-tariff_comp_Std1<- tariff_Std1 %>% 
-  mutate(forecast_actual = forecast_Std1-actual_Std1)
-tariff_comp_Std2<- tariff_Std2 %>% 
-  mutate(forecast_actual = forecast_Std2-actual_Std2)
-tariff_comp_ToU1<- tariff_ToU1 %>% 
-  mutate(forecast_actual = forecast_ToU1-actual_ToU1)
-tariff_comp_ToU2<- tariff_ToU2 %>% 
-  mutate(forecast_actual = forecast_ToU2-actual_ToU2)
+tariff_ToU2 <- cbind(tariff_raw, forecast_ToU2, actual_ToU2) %>% 
+  mutate(forecast = as.numeric(forecast_ToU2))
 
 ```
-
-## high 
 
 ```{r}
 
@@ -271,7 +264,6 @@ ggplot() +
 
 ```
 
-## Low 
 ```{r}
 #Low
 
@@ -314,7 +306,6 @@ ggplot() +
   ggtitle("Forecasted Versus Actual Demand During Low Tariff Hours, 2013")
 ```
 
-## Normal 
 
 ```{r}
 #Normal
@@ -358,74 +349,48 @@ ggplot() +
   ggtitle("Forecasted Versus Actual Demand During Normal Tariff Hours, 2013")
 ```
 
-## By cluster
-
 ```{r}
-
-std1<- ggplot()+
-  geom_density(data = tariff_comp_Std1, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+std1 <- ggplot() +
+  geom_density(data = tariff_comp_Std1_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_Std1_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_Std1_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
   xlab("Forecasted - Actual Demand")+
-  scale_color_manual(
-    name = "Tariff Type",
-    values = c(
-      "Normal" = "goldenrod1",
-      "High" = "red",
-      "Low" = "darkgreen"))+
-  ggtitle("Std1")+
-  theme(legend.position = "none")
+  ggtitle("Std1")
 
-std2<- ggplot()+
-  geom_density(data = tariff_comp_Std2, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+std2 <- ggplot() +
+  geom_density(data = tariff_comp_Std2_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_Std2_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_Std2_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
   xlab("Forecasted - Actual Demand")+
-  scale_color_manual(
-    name = "Tariff Type",
-    values = c(
-      "Normal" = "goldenrod1",
-      "High" = "red",
-      "Low" = "darkgreen"))+
-  ggtitle("Std2")+ theme(legend.position = "none")
+  ggtitle("Std2")
 
 
-tou1<- ggplot()+
-  geom_density(data = tariff_comp_ToU1, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+tou1 <- ggplot() +
+  geom_density(data = tariff_comp_ToU1_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_ToU1_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_ToU1_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
   xlab("Forecasted - Actual Demand")+
-  scale_color_manual(
-    name = "Tariff Type",
-    values = c(
-      "Normal" = "goldenrod1",
-      "High" = "red",
-      "Low" = "darkgreen"))+
-  ggtitle("ToU1")+ theme(legend.position = "none")
+  ggtitle("ToU1")
 
-tou2<- ggplot()+
-  geom_density(data = tariff_comp_ToU2, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+tou2 <- ggplot() +
+  geom_density(data = tariff_comp_ToU2_Normal,
+               aes(x = forecast_actual), alpha = 0.5, color = "goldenrod1") +
+  geom_density(data = tariff_comp_ToU2_Low,
+               aes(x = forecast_actual), alpha = 0.5, color = "darkgreen") +
+  geom_density(data = tariff_comp_ToU2_high,
+               aes(x = forecast_actual), alpha = 0.5, color = "red") +
   xlab("Forecasted - Actual Demand")+
-  scale_color_manual(
-    name = "Tariff Type",
-    values = c(
-      "Normal" = "goldenrod1",
-      "High" = "red",
-      "Low" = "darkgreen"))+
-  ggtitle("ToU2")+ theme(legend.position = "none")
+  ggtitle("ToU2")
 
-legend<- ggplot()+
-  geom_density(data = tariff_comp_Std1, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
-  xlab("Forecasted - Actual Demand")+
-  scale_color_manual(
-    name = "Tariff Type",
-    values = c(
-      "Normal" = "goldenrod1",
-      "High" = "red",
-      "Low" = "darkgreen"))+
-  ggtitle("Std1")+
-  theme(legend.position = "bottom")
-
-legend <- get_legend(legend)
-
-cowplot::plot_grid(
-  plot_grid(std1,std2,tou1,tou2, ncol = 2),
-  legend,
-  ncol = 1,
-  rel_heights=c(1,0.1))
+cowplot::plot_grid(std1,std2,tou1,tou2)
 ```
 
