@@ -1,6 +1,6 @@
 ---
-title: "FinalReport"
-author: "Maeve Gualtieri-Reed, Sylvia Hipp, Sadie Kasten, Josh Salzberg"
+title: "ForecastActualComparison"
+author: "Maeve Gualtieri-Reed"
 date: "2026-04-22"
 output: pdf_document
 editor_options: 
