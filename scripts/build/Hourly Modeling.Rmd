@@ -450,3 +450,26 @@ df_Std2_2013 <- processed_Std_2013 %>%
   select(ds = "datetime", y = "Std 2")
 ```
 
+
+```{r}
+#Prophet for Std1
+Prophet_Std1 <- prophet(df_Std1_2012)
+Future_Std1 <- make_future_dataframe(Prophet_Std1, periods = 8760, freq="hour")
+Prophet_Std1_forecast <- predict(Prophet_Std1, Future_Std1)
+
+prophet_Std1_plot_df <- Prophet_Std1_forecast %>%
+  select(ds, yhat) %>%
+  left_join(df_Std1_2013, by = "ds")
+
+ggplot(prophet_Std1_plot_df, aes(x = ds)) +
+  geom_line(aes(y = y, color = "Actual")) +
+  geom_line(aes(y = yhat, color = "Forecast")) +
+  labs(title = "Actual vs Forecast",
+       x = "Date", y = "Value", color = "")+
+  xlim(as.POSIXct("2013-01-01"), as.POSIXct("2013-12-31"))
+
+Prophet_Std1_accuracy <- accuracy(Prophet_Std1_forecast$yhat,df_Std1_2013$y)
+
+
+```
+
