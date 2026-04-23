@@ -118,11 +118,7 @@ Once the final sample of households was identified, households were separated by
 
 [[Show glimpse of processed data for each time series (?) + plot of the time series]]
 
-# Analysis
-
-## Load in Data
-
-```{r}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 #load in data
 
 raw_Std <- read.csv(file="./data/processed/Std_household_load.csv",
@@ -169,7 +165,7 @@ tariff_raw <- read_xlsx(path="./data/raw/Tariffs.xlsx") %>%
   mutate(HourRateLevel = as.numeric(HourRate))
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 processed_Std_2012 <- raw_Std %>%
   pivot_wider(names_from = cluster,
               values_from = load_kwh) %>% 
@@ -195,7 +191,7 @@ processed_ToU_2013 <- raw_ToU %>%
   filter(year(datetime) == 2013)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 #2012
 ts_Std1_2012 <- msts(processed_Std_2012$`Std 1`, 
                             seasonal.periods =c(24,168,8766),
@@ -232,6 +228,8 @@ ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`,
                             start=c(2013,1,0))
 ```
 
+# Analysis
+
 ## Exploratory Analysis
 
 All clusters show a similar pattern of peaking in the winter and dipping in the summer **[[FIGURE XX]]**. Std1 shows much higher variability and total load than any of the other three clusters, while ToU2 cluster shows the least variability between peak and not peak months. A visual analysis indicates that this data has multiple seasonal components, shown by the peaking and troughing within shorter and longer time periods.
@@ -240,7 +238,7 @@ Because a model will be trained on the 2012 data, each cluster was decomposed fo
 
 The ACF and PACF of the residuals of the decomposition show that there is seasonal dependence that is not accurately accounted for in the decomposition (**[[FIGURE XX-XX]]**). The ACF shows a slow decay, indicating a persisting strong autoregressive component. Additionally, the ACF and PACF both show peaks at the 24 hour marks, indicating that the hourly component is not fully modeled in the decomposition. Therefore, complex models will be needed to accurately model all seasonal components. 
 
-```{r}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 
 raw_all <- rbind(raw_Std,raw_ToU)
 
@@ -267,7 +265,7 @@ ggplot(tariff_raw, aes(x = hour(datehour), fill = HourRate)) +
 
 ```
 
-```{r fig.cap = "Figure XX. Decomposition of each clusters, 2012"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Figure XX. Decomposition of each clusters, 2012"}
 #std1 decomposition
 Std1_2012_decomp <- ts_Std1_2012 %>% mstl() 
 Std1_2012_decomp_plot<- autoplot(Std1_2012_decomp)+
@@ -306,7 +304,7 @@ cowplot::plot_grid(Std1_2012_decomp_plot,Std2_2012_decomp_plot,
 ```
 
 
-```{r fig.cap="FIGUREXX. Std1 ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX. Std1 ACF and PACF"}
 #Std 1 ACF PACF
 std1_ACF<- autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="Std1")
 std1_PACF<-autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main = "")
@@ -314,7 +312,7 @@ std1_PACF<-autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FAL
 cowplot::plot_grid(std1_ACF, std1_PACF)
 ```
 
-```{r fig.cap="FIGUREXX, Std2 ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX, Std2 ACF and PACF"}
 #Std 2 ACF PACF
 
 std2_ACF<-autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="Std2")
@@ -324,7 +322,7 @@ std2_PACF<-autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FAL
 cowplot::plot_grid(std2_ACF, std2_PACF)
 ```
 
-```{r fig.cap="FIGUREXX, ToU1 ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX, ToU1 ACF and PACF"}
 #ToU 1 ACF PACF
 
 ToU1_ACF<- autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Tou1")
@@ -334,7 +332,7 @@ ToU1_PACF<- autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FA
 cowplot::plot_grid(ToU1_ACF,ToU1_PACF)
 ```
 
-```{r fig.cap="FIGUREXX, ToU ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX, ToU ACF and PACF"}
 
 #ToU 2 ACF PACF
 
@@ -353,7 +351,7 @@ To forecast the models and predict 2013 hourly load for all clustered groups, th
 
 ## Models
 
-```{r}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 #Std1
 ARIMA_Std1 <- auto.arima(ts_Std1_2012, seasonal=FALSE, lambda=0,
                              xreg=fourier(ts_Std1_2012,  K=c(5,3,1)))
@@ -403,7 +401,7 @@ ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
 
 The comparison of the ARIMA forecast for each of the clusters compared to the actual electricity demand in 2013 (**[[Figure XX]]**) shows a difference between standard and time of use cluster demand behaviors in response to tariff rates. In the two standard clusters, the forecast and actual are fairly similar, with their difference centered around 0 and uniform across all hours. In both time of use clusters, the forecast seems to overestimate demand during periods of "High" tariffs and underestimate demand during periods of "Low" tariffs. In **[[Figure XX]]** the time of use clusters' red curves, which represents all "High" tariff hours, are shifted to the right, indicating that the forecast value at a given hour tends to be higher than the actual value. The green curves are shifted to the left, indicating that the forecast value at a given hour tends to be lower than the actual value. This aligns with the hypothesis that customers will change their behavior and shift their load from periods of high tariff rates to low tariff rates. Notably, the Std1 cluster has a much larger residual range than any of the other clusters. Further statistical analysis should be done to determine if this visual trend is significant. Future research should investigate if overall usage in time of use households changes with the tariff implementation and whether certain patterns in hourly usage or the duration of high and low tariff periods are associated with greater behavioral change.
 
-```{r fig.cap = "FigureXX. Forecasted Versus Actual Demand for Standard and Time-of-Use Households"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "FigureXX. Forecasted Versus Actual Demand for Standard and Time-of-Use Households"}
 forecast_Std1 <- ARIMA_Std1_forecast$mean
 actual_Std1 <- processed_Std_2013$`Std 1`
 
