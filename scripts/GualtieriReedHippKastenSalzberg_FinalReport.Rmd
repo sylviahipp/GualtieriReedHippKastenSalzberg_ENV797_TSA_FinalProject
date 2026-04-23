@@ -27,6 +27,7 @@ library(gt)
 library(readxl)
 library(knitr)
 library(kableExtra)
+library(glue)
 ```
 
 ```{r Set global theme, include=FALSE}
@@ -62,7 +63,7 @@ According to a systematic literature review by Yuniarto et al. (2023), the effec
 
 *Does demand forecasted under pre-ToU conditions differ from actual demand once ToU tariffs are introduced?*
 
-We expect that customers will change their electricity usage behavior based on ToU tariff rates and shift some demand from traditional peak periods when tariff rates are high to periods when tariff rates are low. We hypothesize that the forecasted versus actual for customers with a standard rate would show normally distributed residuals around 0 while the ToU customers have skewed residuals, based on the tariff rate level. During high tariff hours, we expect that the forecasted value is higher than the actual value and that during low tariff hours, customers actually use more demand than forecasted. 
+We expect that customers will change their electricity usage behavior based on ToU tariff rates and shift some demand from traditional peak periods when tariff rates are high to periods when tariff rates are low. We hypothesize that the forecasted versus actual for customers with a standard rate would show normally distributed residuals around 0 while the ToU customers have skewed residuals, based on the tariff rate level. During high tariff hours, we expect that the forecasted value is higher than the actual value and that during low tariff hours, customers actually use more demand than forecasted.
 
 # Dataset Information
 
@@ -82,7 +83,7 @@ The dataset for this project was obtained from a study done by UK Power Networks
 
 1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table YY]]**.
 
-```{r Table XX, echo=FALSE, message=FALSE, warning=FALSE, }
+```{r Raw Data Tables, echo=FALSE, message=FALSE, warning=FALSE, }
 # household load
 kable(household_load_raw %>% head(n=5), 
       caption = "Household Load Raw Data") %>% 
@@ -112,11 +113,85 @@ After aggregating load data to the half hour, the load dataset was processed to 
 
 [^4]: A household was identified as an outlier if the cumulative distance of its hourly usage from the mean was in the 99th percentile among all households.
 
-Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify the clusters so to avoid capturing First, each household's hourly demand was normalized relative to its
+Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify clusters so to avoid capturing any changes in behavior caused by the treatment. First, each household's hourly demand was normalized relative to its total demand in 2012 so that clusters were identified based on energy usage patterns rather than total volume. For both the Standard and dToU households, the optimal number of clusters (i.e., clustering with the maximum silhouette score) was found to be 2. Each treatment group/cluster was then aggregated by taking the mean load at each hour across all households in the group. This resulted in four distinct hourly time series depicted below in **[[Figure XX]]**[^5] and summarized in **[[Table ZZ]].** As is shown in the figure, cluster 1 for both the standard and dToU groups exhibited highly varied usage between the winter and summer, while cluster 2 of both groups exhibited much smoother seasonality.
 
-[[K-Means Clustering]]
+[^5]: **[[Figure XX]]** shows load data aggregated at the daily level, but the time series used in the modeling and analysis are at the hourly level.
 
-[[Show glimpse of processed data for each time series (?) + plot of the time series]]
+```{r Cluster Load Plots, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Daily Average Energy Usage By Cluster and Treatment Group", fig.height=4}
+# smooth to daily 
+plot_clusters <- function(df_agg, group="Standard"){
+  if(group=="Std"){
+    colors = c("orange", "red")
+  }
+  else{
+    colors = c("darkgreen", "darkblue")
+  }
+  
+  df_agg_daily <- df_agg %>% 
+    mutate(date = as.Date(datetime_utc), 
+           cluster = factor(cluster, 
+                            levels=c(1,2), 
+                            labels=c(glue("{group} Cluster 1"), glue("{group} Cluster 2")))) %>% 
+    group_by(date, cluster) %>% 
+    summarize(daily_load = sum(load_kwh)) %>% 
+    ungroup() 
+  
+  plot <- ggplot(df_agg_daily) + 
+    geom_line(aes(x = date, y = daily_load, color = cluster), 
+              linewidth = 0.25) + 
+    geom_vline(aes(xintercept = as.Date("2013-01-01")), 
+               color = "black", linetype = 2) + 
+    scale_x_date(date_labels = "%b-%Y") +
+    scale_color_manual(values = colors) +
+    #theme_classic() + 
+    theme(legend.position = "right") +
+    labs(
+      x = NULL, 
+      y = "Daily Load (kWh)", 
+      color = NULL, 
+      title = group
+    )
+    
+  return(plot)
+}
+
+# read in processed data
+std_aggregated <- read.csv(here("data/processed/Std_household_load.csv"))
+tou_aggregated <- read.csv(here("data/processed/ToU_household_load.csv"))
+
+# plot 
+std_cluster_plot <- plot_clusters(std_aggregated, group="Std")
+tou_cluster_plot <- plot_clusters(tou_aggregated, group="ToU")
+
+plot_grid(std_cluster_plot, tou_cluster_plot, 
+          nrow = 2)
+```
+
+```{r Cluster Table, echo=FALSE, message=FALSE, warning=FALSE}
+max_demand_by_cluster <- bind_rows(
+  std_aggregated %>% mutate(group = "Standard"), 
+  tou_aggregated %>% mutate(group = "dToU")
+) %>% 
+  group_by(group, cluster) %>% 
+  summarize(max_demand = max(load_kwh), 
+            avg_demand = mean(load_kwh)) %>% 
+  ungroup()
+
+# table summarizing each cluster
+tibble(
+  "Treatment Group"=c("Standard", "Standard", "dToU", "dToU"), 
+  "Cluster"=c("Cluster 1", "Cluster 2", "Cluster 1", "Cluster 2"), 
+  "Number of Households"=c(49, 1479, 104, 258), 
+  "Max Hourly Load (kW)"=max_demand_by_cluster %>% pull(max_demand), 
+  "Average Hourly Load (kW)"=max_demand_by_cluster %>% pull(avg_demand)
+) %>% 
+  kable(caption = "Summary of Household Clusters") %>%
+  #row_spec(0, align = "c", bold = TRUE) %>% 
+  kable_classic() %>% 
+  kable_styling(latex_options="scale_down")
+```
+
+\newpage
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
 #load in data
@@ -234,9 +309,9 @@ ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`,
 
 All clusters show a similar pattern of peaking in the winter and dipping in the summer **[[FIGURE XX]]**. Std1 shows much higher variability and total load than any of the other three clusters, while ToU2 cluster shows the least variability between peak and not peak months. A visual analysis indicates that this data has multiple seasonal components, shown by the peaking and troughing within shorter and longer time periods.
 
-Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[FIGURE XX]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component. 
+Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[FIGURE XX]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component.
 
-The ACF and PACF of the residuals of the decomposition show that there is seasonal dependence that is not accurately accounted for in the decomposition (**[[FIGURE XX-XX]]**). The ACF shows a slow decay, indicating a persisting strong autoregressive component. Additionally, the ACF and PACF both show peaks at the 24 hour marks, indicating that the hourly component is not fully modeled in the decomposition. Therefore, complex models will be needed to accurately model all seasonal components. 
+The ACF and PACF of the residuals of the decomposition show that there is seasonal dependence that is not accurately accounted for in the decomposition (**[[FIGURE XX-XX]]**). The ACF shows a slow decay, indicating a persisting strong autoregressive component. Additionally, the ACF and PACF both show peaks at the 24 hour marks, indicating that the hourly component is not fully modeled in the decomposition. Therefore, complex models will be needed to accurately model all seasonal components.
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
 
@@ -302,7 +377,6 @@ cowplot::plot_grid(Std1_2012_decomp_plot,Std2_2012_decomp_plot,
                    ToU1_2012_decomp_plot, ToU2_2012_decomp_plot)
 
 ```
-
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX. Std1 ACF and PACF"}
 #Std 1 ACF PACF
