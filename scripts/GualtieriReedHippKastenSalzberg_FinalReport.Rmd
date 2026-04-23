@@ -231,6 +231,9 @@ All clusters show a similar pattern of peaking in the winter and dipping in the 
 Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[Table XX]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component. 
 
 ```{r}
+
+raw_all <- rbind(raw_Std,raw_ToU)
+
 raw_all_plot<- ggplot(raw_all)+
   geom_line(aes(x = datetime, y = load_kwh,color = cluster), alpha = 0.6)+
   labs(x = "Date and Time", y = "Load (kWh)")+
@@ -348,7 +351,7 @@ ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
   ylab("Load (kWh)") + labs(title="Forecast vs Actual ToU2")
 ```
 
-### Forecast Versus Actual Comparison
+# Results
 
 The comparison of the ARIMA forecast for each of the clusters compared to the actual electricity demand in 2013 (**[[Figure XX]]**) shows a difference between standard and time of use cluster demand behaviors in response to tariff rates. In the two standard clusters, the forecast and actual are fairly similar, with their difference centered around 0 and uniform across all hours. In both time of use clusters, the forecast seems to overestimate demand during periods of "High" tariffs and underestimate demand during periods of "Low" tariffs. In **[[Figure XX]]** the time of use clusters' red curves, which represents all "High" tariff hours, are shifted to the right, indicating that the forecast value at a given hour tends to be higher than the actual value. The green curves are shifted to the left, indicating that the forecast value at a given hour tends to be lower than the actual value. This aligns with the hypothesis that customers will change their behavior and shift their load from periods of high tariff rates to low tariff rates. Further statistical analysis should be done to determine if this visual trend is significant. Future research should investigate if overall usage in time of use households changes with the tariff implementation and whether certain patterns in hourly usage or the duration of high and low tariff periods are associated with greater behavioral change. 
 
@@ -449,7 +452,13 @@ cowplot::plot_grid(
 
 # Summary and Conclusions
 
+This analysis reveals a change in behavior that shifts demand from peak hours to off-peak hours. 
 
+Limitations: one year of data used to forecast one year of data
+
+Recommendations: 
+
+Model improvement: Weather data, 
 
 _____________________________
 **From Canvas**: Report Sections: 
