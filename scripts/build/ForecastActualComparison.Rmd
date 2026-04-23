@@ -327,26 +327,73 @@ tariff_comp_ToU2_Normal <- tariff_ToU2 %>%
   filter(HourRate == "Normal") %>% 
   mutate(forecast_actual = forecast_ToU2-actual_ToU2)
 
-ggplot() +
-  geom_density(data = tariff_comp_Std1_Normal,
-               aes(x = forecast_actual, color = "Std1"), alpha = 0.5) +
-  geom_density(data = tariff_comp_Std2_Normal,
-               aes(x = forecast_actual, color = "Std2"), alpha = 0.5) +
-  geom_density(data = tariff_comp_ToU1_Normal,
-               aes(x = forecast_actual, color = "ToU1"), alpha = 0.5) +
-  geom_density(data = tariff_comp_ToU2_Normal,
-               aes(x = forecast_actual, color = "ToU2"), alpha = 0.5) +
+std1<- ggplot()+
+  geom_density(data = tariff_comp_Std1, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+  xlab("Forecasted - Actual Demand")+
   scale_color_manual(
     name = "Tariff Type",
     values = c(
-      "Std1" = "goldenrod1",
-      "Std2" = "red",
-      "ToU1" = "darkgreen",
-      "ToU2" = "blue"
-    )
-  )+
+      "Normal" = "goldenrod1",
+      "High" = "red",
+      "Low" = "darkgreen"))+
+  ggtitle("Std1")+
+  theme(legend.position = "none")
+
+std2<- ggplot()+
+  geom_density(data = tariff_comp_Std2, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
   xlab("Forecasted - Actual Demand")+
-  ggtitle("Forecasted Versus Actual Demand During Normal Tariff Hours, 2013")
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Normal" = "goldenrod1",
+      "High" = "red",
+      "Low" = "darkgreen"))+
+  ggtitle("Std2")+ theme(legend.position = "none")
+
+
+tou1<- ggplot()+
+  geom_density(data = tariff_comp_ToU1, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+  xlab("Forecasted - Actual Demand")+
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Normal" = "goldenrod1",
+      "High" = "red",
+      "Low" = "darkgreen"))+
+  ggtitle("ToU1")+ theme(legend.position = "none")
+
+tou2<- ggplot()+
+  geom_density(data = tariff_comp_ToU2, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+  xlab("Forecasted - Actual Demand")+
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Normal" = "goldenrod1",
+      "High" = "red",
+      "Low" = "darkgreen"))+
+  ggtitle("ToU2")+ theme(legend.position = "none")
+
+legend<- ggplot()+
+  geom_density(data = tariff_comp_Std1, aes(x = forecast_actual, color = HourRate), alpha = 0.5)+
+  xlab("Forecasted - Actual Demand")+
+  scale_color_manual(
+    name = "Tariff Type",
+    values = c(
+      "Normal" = "goldenrod1",
+      "High" = "red",
+      "Low" = "darkgreen"))+
+  ggtitle("Std1")+
+  theme(legend.position = "bottom")
+
+legend <- get_legend(legend)
+
+cowplot::plot_grid(
+  plot_grid(std1,std2,tou1,tou2, ncol = 2),
+  legend,
+  ncol = 1,
+  rel_heights=c(1,0.1))
+
+# Add caption and title
 ```
 
 ```{r}
