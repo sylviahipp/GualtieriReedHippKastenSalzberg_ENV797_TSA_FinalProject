@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.25)  22 APR 2026 11:45
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.2.25)  22 APR 2026 21:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -558,7 +558,7 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 132.
 (/home/guest/.TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [4] [5] (./GualtieriReedHippKastenSalzberg_FinalReport.aux)
+) [4] [5] [6] (./GualtieriReedHippKastenSalzberg_FinalReport.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -568,18 +568,18 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 12814 strings out of 469514
- 195782 string characters out of 5469850
- 621108 words of memory out of 5000000
+ 12817 strings out of 469514
+ 195810 string characters out of 5469850
+ 622108 words of memory out of 5000000
  41202 multiletter control sequences out of 15000+600000
  687751 words of font info for 86 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 89i,8n,93p,403b,533s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 89i,8n,93p,403b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr6.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr7.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr8.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri8.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></home/guest/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt8.pfb>
-Output written on GualtieriReedHippKastenSalzberg_FinalReport.pdf (5 pages, 285586 bytes).
+Output written on GualtieriReedHippKastenSalzberg_FinalReport.pdf (6 pages, 290325 bytes).
 PDF statistics:
- 152 PDF objects out of 1000 (max. 8388607)
- 121 compressed objects within 2 object streams
- 28 named destinations out of 1000 (max. 500000)
+ 161 PDF objects out of 1000 (max. 8388607)
+ 129 compressed objects within 2 object streams
+ 31 named destinations out of 1000 (max. 500000)
  65 words of extra memory for PDF output out of 10000 (max. 10000000)
 

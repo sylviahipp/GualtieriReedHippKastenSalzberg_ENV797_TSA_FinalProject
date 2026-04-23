@@ -91,23 +91,26 @@ kable(tariffs_raw %>% head(n=5),
 
 ## Data Wrangling
 
-Both the household load and tariff schedule data were aggregated to the hour, as half-hour increments complicated the time series seasonality without adding much incremental benefits to characterizing household behavior. In cases where the tariff level differed between the top and bottom of the hour, the following logic was applied to infer tariff level for the whole hour: 
+Both the household load and tariff schedule data were aggregated to the hour as the native half-hour increments complicated the time series seasonality without improving the model. Household load was given as kWh per half hour for each household, so hourly load was taken as the total load over both half hours.[^PythonNote] For the tariff schedule data, in cases where the tariff level differed between the top and bottom of the hour, the following logic was applied to infer tariff level for the whole hour: 
 
-1) High and Normal -> High
-2) Low and Normal -> Low
-3) High and Low -> Normal
+1) High and Normal --> High
+2) Low and Normal --> Low
+3) High and Low --> Normal
 
-Household load was given as kWh per half hour for each household. To aggregate at the hourly level, 
+After aggregating load data to the half hour, the load dataset was processed to exclude missing data. First, the entire dataset was limited to the period January 2012--December 2013 to exclude periods with sparse data in the last two months of 2011 and first two months of 2014. Second, households with over 2,880 hours of missing data (roughly four months) in 2012 were excluded from the analysis.[^Why2012] Finally, any household exhibiting extreme outlier behavior was removed.[^OutlierDef] Following this process, 1,528 Standard households and 362 dToU households remained. 
 
+Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify the clusters so to avoid capturing First, each household's hourly demand was normalized relative to its 
 
-[[Aggregating to the hour for both tariff dataset and household load dataset]][^PythonNote]
-
-[[Removal of missing data + restrict to only the two whole years + separating into Std / ToU customers]]
 
 [[K-Means Clustering]]
 
+[[Show glimpse of processed data for each time series (?) + plot of the time series]]
+
 [^PythonNote]: The initial dataset of household load included over 200 million observations representing 2+ years of data at half-hour increments for over 5,500 households. To make the data more manageable in R, the data was initially wrangled in Python then exported to R. The code for this initial data wrangling can be found in `~/scripts/build/00_lcl_data_build.ipynb`.  
 
+[^Why2012]: The models in this project were trained on household load data from 2012. Therefore, households with excessive missing data in this year were excluded.  
+
+[^OutlierDef]: A household was identified as an outlier if the cumulative distance of its hourly usage from the mean was in the 99th percentile among all households. 
 
 # Analysis
 
