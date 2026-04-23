@@ -100,7 +100,7 @@ Both the household load and tariff schedule data were aggregated to the hour as 
 
 After aggregating load data to the half hour, the load dataset was processed to exclude missing data. First, the entire dataset was limited to the period January 2012--December 2013 to exclude periods with sparse data in the last two months of 2011 and first two months of 2014. Second, households with over 2,880 hours of missing data (roughly four months) in 2012 were excluded from the analysis.[^Why2012] Finally, any household exhibiting extreme outlier behavior was removed.[^OutlierDef] Following this process, 1,528 Standard households and 362 dToU households remained. 
 
-Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify clusters so to avoid capturing any changes in behavior caused by the treatment. First, each household's hourly demand was normalized relative to its total demand in 2012 so that clusters were identified based on energy usage patterns rather than total volume. For both the Standard and dToU households, the optimal number of clusters (i.e., clustering with the maximum silhouette score) was found to be 2. Each treatment group/cluster was then aggregated by taking the mean load at each hour across all households in the group. This resulted in four distinct hourly time series depicted below in **[[Figure XX]]**[^FigNote] and summarized in **[[Table ZZ]].** As is shown in the figure, cluster 1 of both treatment groups exhibited highly varied usage between the winter and summer relative to cluster 2 of both groups, which showed a much smoother seasonality. 
+Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify clusters so to avoid capturing any changes in behavior caused by the treatment. First, each household's hourly demand was normalized relative to its total demand in 2012 so that clusters were identified based on energy usage patterns rather than total volume. For both the Standard and dToU households, the optimal number of clusters (i.e., clustering with the maximum silhouette score) was found to be 2. Each treatment group/cluster was then aggregated by taking the mean load at each hour across all households in the group. This resulted in four distinct hourly time series depicted below in **[[Figure XX]]**[^FigNote] and summarized in **[[Table ZZ]].** As is shown in the figure, cluster 1 for both the standard and dToU groups exhibited highly varied usage between the winter and summer, while cluster 2 of both groups exhibited much smoother seasonality. 
 
 ```{r Cluster Load Plots, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Daily Average Energy Usage By Cluster and Treatment Group", fig.height=4}
 # smooth to daily 
@@ -152,7 +152,29 @@ plot_grid(std_cluster_plot, tou_cluster_plot,
           nrow = 2)
 ```
 
+```{r Cluster Table, echo=FALSE, message=FALSE, warning=FALSE}
+max_demand_by_cluster <- bind_rows(
+  std_aggregated %>% mutate(group = "Standard"), 
+  tou_aggregated %>% mutate(group = "dToU")
+) %>% 
+  group_by(group, cluster) %>% 
+  summarize(max_demand = max(load_kwh), 
+            avg_demand = mean(load_kwh)) %>% 
+  ungroup()
 
+# table summarizing each cluster
+tibble(
+  "Treatment Group"=c("Standard", "Standard", "dToU", "dToU"), 
+  "Cluster"=c("Cluster 1", "Cluster 2", "Cluster 1", "Cluster 2"), 
+  "Number of Households"=c(49, 1479, 104, 258), 
+  "Max Hourly Load (kW)"=max_demand_by_cluster %>% pull(max_demand), 
+  "Average Hourly Load (kW)"=max_demand_by_cluster %>% pull(avg_demand)
+) %>% 
+  kable(caption = "Summary of Household Clusters") %>%
+  #row_spec(0, align = "c", bold = TRUE) %>% 
+  kable_classic() %>% 
+  kable_styling(latex_options="scale_down")
+```
 
 [^PythonNote]: The initial dataset of household load included over 200 million observations representing 2+ years of data at half-hour increments for over 5,500 households. To make the data more manageable in R, the data was initially wrangled in Python then exported to R. The code for this initial data wrangling can be found in `~/scripts/build/00_lcl_data_build.ipynb`.  
 
