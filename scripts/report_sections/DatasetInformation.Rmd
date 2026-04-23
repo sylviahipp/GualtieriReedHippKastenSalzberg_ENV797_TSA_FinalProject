@@ -8,6 +8,14 @@ editor_options:
   chunk_output_type: console
 ---
 
+\newpage
+\tableofcontents 
+\newpage
+\listoftables 
+\listoffigures 
+\newpage
+
+
 ```{r Load Packages, message=FALSE, warning=FALSE, include=FALSE}
 library(here)
 library(tseries)
@@ -16,4 +24,154 @@ library(lubridate)
 library(cowplot)
 library(forecast)
 library(gt)
+library(readxl)
+library(knitr)
+library(kableExtra)
+library(glue)
 ```
+
+```{r Set global theme, include=FALSE}
+# set theme for formatting consistency
+global_theme <- theme_classic() +
+  theme(plot.title = element_text(size = 11, hjust = 0.5, face = "bold"), #Adjust title
+        plot.subtitle = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 9), # Adjust x-axis values
+        axis.text.y = element_text(size = 9), # Adjust y-axis values
+        axis.title.x = element_text(size = 10.5), # Adjust x-axis title
+        axis.title.y = element_text(size = 10.5), # Adjust y-axis title
+        legend.position = "bottom", # Define legend position
+        legend.text = element_text(size = 9), # Define legend entry sizes
+        legend.title = element_text(size = 9)) # Define legend name sizes
+
+# set theme globally
+theme_set(global_theme)
+
+# **Add to any Kables**: 
+# row_spec(0, align = "c", bold = TRUE) %>% 
+#   kable_classic() 
+```
+
+# Introduction
+
+
+
+
+# Dataset Information
+
+## Raw Data
+
+```{r Read Raw Data, message=FALSE, warning=FALSE, include=FALSE}
+tariffs_raw <- read_excel(here("data/raw/Tariffs.xlsx"))
+
+household_load_raw <- read.csv(here("data/raw/ExampleHouseholdLoad.csv")) %>% 
+  filter(str_detect(DateTime, "^2013-01-01")) %>% 
+  rename("kWhPerHalfHour" = 4)
+```
+
+The dataset for this project was obtained from a study done by UK Power Networks titled SmartMeter Energy Consumption Data in London Households.[^UKPowerNetworks] The dataset includes energy consumption readings every half hour over the period November 2011 to February 2014. The purpose of the study was to understand how price signals could support higher renewable penetration as well as reduce stress on local distribution grids. 5,566 households participated in the study and were selected as a balanced sample to represent the electricity usage of the Greater London population. 
+
+1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table YY]]**. 
+
+```{r Raw Data Tables, echo=FALSE, message=FALSE, warning=FALSE, }
+# household load
+kable(household_load_raw %>% head(n=5), 
+      caption = "Household Load Raw Data") %>% 
+  row_spec(0, align = "c", bold = TRUE) %>% 
+  kable_classic()
+
+# tariffs
+kable(tariffs_raw %>% head(n=5), 
+      caption = "Tariff Schedule Raw Data") %>% 
+  row_spec(0, align = "c", bold = TRUE) %>% 
+  kable_classic()
+```
+
+
+[^UKPowerNetworks]: UK Power Networks. (2015). *SmartMeter energy consumption data in London households.* London Datastore. https://data.london.gov.uk/dataset/smartmeter-energy-consumption-data-in-london-households-vqm0d/.
+
+
+## Data Wrangling
+
+Both the household load and tariff schedule data were aggregated to the hour as the native half-hour increments complicated the time series seasonality without improving the model. Household load was given as kWh per half hour for each household, so hourly load was taken as the total load over both half hours.[^PythonNote] For the tariff schedule data, in cases where the tariff level differed between the top and bottom of the hour, the following logic was applied to infer tariff level for the whole hour: 
+
+1) High and Normal --> High
+2) Low and Normal --> Low
+3) High and Low --> Normal
+
+After aggregating load data to the half hour, the load dataset was processed to exclude missing data. First, the entire dataset was limited to the period January 2012--December 2013 to exclude periods with sparse data in the last two months of 2011 and first two months of 2014. Second, households with over 2,880 hours of missing data (roughly four months) in 2012 were excluded from the analysis.[^Why2012] Finally, any household exhibiting extreme outlier behavior was removed.[^OutlierDef] Following this process, 1,528 Standard households and 362 dToU households remained. 
+
+Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify clusters so to avoid capturing any changes in behavior caused by the treatment. First, each household's hourly demand was normalized relative to its total demand in 2012 so that clusters were identified based on energy usage patterns rather than total volume. For both the Standard and dToU households, the optimal number of clusters (i.e., clustering with the maximum silhouette score) was found to be 2. Each treatment group/cluster was then aggregated by taking the mean load at each hour across all households in the group. This resulted in four distinct hourly time series depicted below in **[[Figure XX]]**[^FigNote] and summarized in **[[Table ZZ]].** As is shown in the figure, cluster 1 of both treatment groups exhibited highly varied usage between the winter and summer relative to cluster 2 of both groups, which showed a much smoother seasonality. 
+
+```{r Cluster Load Plots, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Daily Average Energy Usage By Cluster and Treatment Group", fig.height=4}
+# smooth to daily 
+plot_clusters <- function(df_agg, group="Standard"){
+  if(group=="Std"){
+    colors = c("orange", "red")
+  }
+  else{
+    colors = c("darkgreen", "darkblue")
+  }
+  
+  df_agg_daily <- df_agg %>% 
+    mutate(date = as.Date(datetime_utc), 
+           cluster = factor(cluster, 
+                            levels=c(1,2), 
+                            labels=c(glue("{group} Cluster 1"), glue("{group} Cluster 2")))) %>% 
+    group_by(date, cluster) %>% 
+    summarize(daily_load = sum(load_kwh)) %>% 
+    ungroup() 
+  
+  plot <- ggplot(df_agg_daily) + 
+    geom_line(aes(x = date, y = daily_load, color = cluster), 
+              linewidth = 0.25) + 
+    geom_vline(aes(xintercept = as.Date("2013-01-01")), 
+               color = "black", linetype = 2) + 
+    scale_x_date(date_labels = "%b-%Y") +
+    scale_color_manual(values = colors) +
+    #theme_classic() + 
+    theme(legend.position = "right") +
+    labs(
+      x = NULL, 
+      y = "Daily Load (kWh)", 
+      color = NULL, 
+      title = group
+    )
+    
+  return(plot)
+}
+
+# read in processed data
+std_aggregated <- read.csv(here("data/processed/Std_household_load.csv"))
+tou_aggregated <- read.csv(here("data/processed/ToU_household_load.csv"))
+
+# plot 
+std_cluster_plot <- plot_clusters(std_aggregated, group="Std")
+tou_cluster_plot <- plot_clusters(tou_aggregated, group="ToU")
+
+plot_grid(std_cluster_plot, tou_cluster_plot, 
+          nrow = 2)
+```
+
+
+
+[^PythonNote]: The initial dataset of household load included over 200 million observations representing 2+ years of data at half-hour increments for over 5,500 households. To make the data more manageable in R, the data was initially wrangled in Python then exported to R. The code for this initial data wrangling can be found in `~/scripts/build/00_lcl_data_build.ipynb`.  
+
+[^Why2012]: The models in this project were trained on household load data from 2012. Therefore, households with excessive missing data in this year were excluded.  
+
+[^OutlierDef]: A household was identified as an outlier if the cumulative distance of its hourly usage from the mean was in the 99th percentile among all households. 
+
+[^FigNote]: **[[Figure XX]]** shows load data aggregated at the daily level, but the time series used in the modeling and analysis are at the hourly level. 
+
+\newpage
+
+
+
+_____________________________
+**From Canvas**: Report Sections: 
+
+#### Dataset information [**Sylvia**]
+
+Provide information on how the dataset for this analysis were collected (source), the data contained in the dataset (format). Describe how you wrangled/processed your dataset to get the time series object.
+
+Add a table that summarizes your data structure (variables, units, ranges and/or central tendencies, data source if multiple are used, etc.). This table should inserted as a `kable` function in an R chunk. Just show the first 10 rows of your data. Do not include the code used to generate your table.
+
