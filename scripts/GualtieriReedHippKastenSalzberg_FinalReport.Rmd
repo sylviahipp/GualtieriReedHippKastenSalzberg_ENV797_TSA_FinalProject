@@ -15,7 +15,6 @@ editor_options:
 \listoffigures 
 \newpage
 
-
 ```{r Load Packages, message=FALSE, warning=FALSE, include=FALSE}
 library(here)
 library(tseries)
@@ -52,8 +51,11 @@ theme_set(global_theme)
 
 # Introduction
 
+The mass adoption of smart meters has enabled the next generation of grid management, through bidirectional, real-time communication of electricity use. This is providing both end users and grid managers with high resolution data that can contribute to power optimization and management, which results in real energy and cost savings (Gholamnia et al., 2025, p. 5238; Meeks et al., 2024, p. 2; The Benefits of Smart Meters, n.d.; Walsh, 2025). Making use of this enhanced data resolution, utilities and grid operators are exploring the relevance of implementing time-variable pricing schemes such as Time of Use (ToU) tariffs, which better account for the true marginal costs of electricity (Demand Response and Time-Variable Pricing Programs, 2020). Static ToU tariffs impose different price tiers according to market demand, commonly in 3 tiers, such as off-peak, mid-peak or normal, and peak (Enrich et al., 2024, p. 2). Some programs integrate dynamic pricing (dToU), which can increase or decrease peak prices on various time-scales to further induce demand response from customers (Gholamnia et al., 2025, pp. 5239–5240).
 
+The literature generally considers demand response as the intended outcome of implementing ToU tariffs, primarily to mitigate extreme peaks in load which result in the highest marginal cost and most polluting plants to come online; while overall reduction in consumed energy has been referenced to a lesser degree (Barjaková et al., 2024, p. 3; Enrich et al., 2024, p. 3; Meeks et al., 2023, pgs. 12-13; “What Are the Benefits of Time-Of-Use Pricing Policies?”, 2025). While the environmental benefits may be significant, consumers generally see this as a pleasant co-benefit to the opportunity to save money on energy bills (Barjaková et al., 2024, p. 9).
 
+According to a systematic literature review by Yuniarto et al. (2023), the effectiveness of ToU tariffs has been increasingly studied, particularly from the user behavior perspective. The behavior dimensions of ToU was also studied by Barjaková et al. (2024), in an effort to understand which educational outreach materials were most effective, and the true motivations of enrollees. These behavioral studies add rich nuance to the longstanding quantitative analyses of the impacts of ToU tariffs. For example, Faruqui and Sergici conducted a meta-analysis of 34 studies a decade prior, which used regression analysis to assess the enabling capacity of smart meters and other technologies on ToU effectiveness (2023, p. 58). Through their study, they identified two “arcs of price responsiveness,” which revealed that smart technology supported tariffs were notably more effective at driving peak reductions; for example, they note that given a 5:1 ratio of peak price to off-peak price, smart technology enabled tariffs would expect a nearly 9% greater reduction in peak load, achieving a roughly 20% net reduction (ibid., p. 61). Other individual studies and meta-analyses have found peak and mid-peak reductions on the order of \~5% to 15% (Enrich et al., 2024; Fu et al., 2024, p 3; Harding & Lamarche, 2016, p. 908). Crucially, these studies have primarily relied on various forms of advanced regression analysis to compare groups. The use of time series analysis has, so far, been limited to designing dToU tariffs or comparing critical peak pricing (a different form of time-varying pricing) and ToU (Gholamnia et al., 2025; Schittekatte et al., 2024). Our project contributes to the growing literature on Time of Use Tariffs by using time series analysis to assess whether dynamic ToU tariffs result in demand response compared to modeled counterfactual baselines, thus comparing residential energy usage within the same group.s
 
 # Dataset Information
 
@@ -67,9 +69,11 @@ household_load_raw <- read.csv(here("data/raw/ExampleHouseholdLoad.csv")) %>%
   rename("kWhPerHalfHour" = 4)
 ```
 
-The dataset for this project was obtained from a study done by UK Power Networks titled SmartMeter Energy Consumption Data in London Households.[^UKPowerNetworks] The dataset includes energy consumption readings every half hour over the period November 2011 to February 2014. The purpose of the study was to understand how price signals could support higher renewable penetration as well as reduce stress on local distribution grids. 5,566 households participated in the study and were selected as a balanced sample to represent the electricity usage of the Greater London population. 
+The dataset for this project was obtained from a study done by UK Power Networks titled SmartMeter Energy Consumption Data in London Households.[^1] The dataset includes energy consumption readings every half hour over the period November 2011 to February 2014. The purpose of the study was to understand how price signals could support higher renewable penetration as well as reduce stress on local distribution grids. 5,566 households participated in the study and were selected as a balanced sample to represent the electricity usage of the Greater London population.
 
-1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table YY]]**. 
+[^1]: UK Power Networks. (2015). *SmartMeter energy consumption data in London households.* London Datastore. <https://data.london.gov.uk/dataset/smartmeter-energy-consumption-data-in-london-households-vqm0d/>.
+
+1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table YY]]**.
 
 ```{r Table XX, echo=FALSE, message=FALSE, warning=FALSE, }
 # household load
@@ -85,35 +89,32 @@ kable(tariffs_raw %>% head(n=5),
   kable_classic()
 ```
 
-
-[^UKPowerNetworks]: UK Power Networks. (2015). *SmartMeter energy consumption data in London households.* London Datastore. https://data.london.gov.uk/dataset/smartmeter-energy-consumption-data-in-london-households-vqm0d/.
-
-
 ## Data Wrangling
 
-Both the household load and tariff schedule data were aggregated to the hour as the native half-hour increments complicated the time series seasonality without improving the model. Household load was given as kWh per half hour for each household, so hourly load was taken as the total load over both half hours.[^PythonNote] For the tariff schedule data, in cases where the tariff level differed between the top and bottom of the hour, the following logic was applied to infer tariff level for the whole hour: 
+Both the household load and tariff schedule data were aggregated to the hour as the native half-hour increments complicated the time series seasonality without improving the model. Household load was given as kWh per half hour for each household, so hourly load was taken as the total load over both half hours.[^2] For the tariff schedule data, in cases where the tariff level differed between the top and bottom of the hour, the following logic was applied to infer tariff level for the whole hour:
 
-1) High and Normal --> High
-2) Low and Normal --> Low
-3) High and Low --> Normal
+[^2]: The initial dataset of household load included over 200 million observations representing 2+ years of data at half-hour increments for over 5,500 households. To make the data more manageable in R, the data was initially wrangled in Python then exported to R. The code for this initial data wrangling can be found in `~/scripts/build/00_lcl_data_build.ipynb`.
 
-After aggregating load data to the half hour, the load dataset was processed to exclude missing data. First, the entire dataset was limited to the period January 2012--December 2013 to exclude periods with sparse data in the last two months of 2011 and first two months of 2014. Second, households with over 2,880 hours of missing data (roughly four months) in 2012 were excluded from the analysis.[^Why2012] Finally, any household exhibiting extreme outlier behavior was removed.[^OutlierDef] Following this process, 1,528 Standard households and 362 dToU households remained. 
+1)  High and Normal --\> High
+2)  Low and Normal --\> Low
+3)  High and Low --\> Normal
 
-Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify the clusters so to avoid capturing First, each household's hourly demand was normalized relative to its 
+After aggregating load data to the half hour, the load dataset was processed to exclude missing data. First, the entire dataset was limited to the period January 2012--December 2013 to exclude periods with sparse data in the last two months of 2011 and first two months of 2014. Second, households with over 2,880 hours of missing data (roughly four months) in 2012 were excluded from the analysis.[^3] Finally, any household exhibiting extreme outlier behavior was removed.[^4] Following this process, 1,528 Standard households and 362 dToU households remained.
 
+[^3]: The models in this project were trained on household load data from 2012. Therefore, households with excessive missing data in this year were excluded.
+
+[^4]: A household was identified as an outlier if the cumulative distance of its hourly usage from the mean was in the 99th percentile among all households.
+
+Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify the clusters so to avoid capturing First, each household's hourly demand was normalized relative to its
 
 [[K-Means Clustering]]
 
 [[Show glimpse of processed data for each time series (?) + plot of the time series]]
 
-[^PythonNote]: The initial dataset of household load included over 200 million observations representing 2+ years of data at half-hour increments for over 5,500 households. To make the data more manageable in R, the data was initially wrangled in Python then exported to R. The code for this initial data wrangling can be found in `~/scripts/build/00_lcl_data_build.ipynb`.  
-
-[^Why2012]: The models in this project were trained on household load data from 2012. Therefore, households with excessive missing data in this year were excluded.  
-
-[^OutlierDef]: A household was identified as an outlier if the cumulative distance of its hourly usage from the mean was in the 99th percentile among all households. 
-
 # Analysis
+
 ## Load in Data
+
 ```{r}
 #load in data
 
@@ -228,7 +229,7 @@ ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`,
 
 All clusters show a similar pattern of peaking in the winter and dipping in the summer **[[Table XX]]**. Std1 shows much higher variability and total load than any of the other three clusters, while ToU2 cluster shows the least variability between peak and not peak months. A visual analysis indicates that this data has multiple seasonal components, shown by the peaking and troughing within shorter and longer time periods.
 
-Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[Table XX]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component. 
+Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[Table XX]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component.
 
 ```{r}
 
@@ -299,7 +300,7 @@ cowplot::plot_grid(Std1_2012_decomp_plot,Std2_2012_decomp_plot,
 
 ```
 
-## Methods 
+## Methods
 
 Model training?
 
@@ -353,7 +354,7 @@ ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
 
 # Results
 
-The comparison of the ARIMA forecast for each of the clusters compared to the actual electricity demand in 2013 (**[[Figure XX]]**) shows a difference between standard and time of use cluster demand behaviors in response to tariff rates. In the two standard clusters, the forecast and actual are fairly similar, with their difference centered around 0 and uniform across all hours. In both time of use clusters, the forecast seems to overestimate demand during periods of "High" tariffs and underestimate demand during periods of "Low" tariffs. In **[[Figure XX]]** the time of use clusters' red curves, which represents all "High" tariff hours, are shifted to the right, indicating that the forecast value at a given hour tends to be higher than the actual value. The green curves are shifted to the left, indicating that the forecast value at a given hour tends to be lower than the actual value. This aligns with the hypothesis that customers will change their behavior and shift their load from periods of high tariff rates to low tariff rates. Further statistical analysis should be done to determine if this visual trend is significant. Future research should investigate if overall usage in time of use households changes with the tariff implementation and whether certain patterns in hourly usage or the duration of high and low tariff periods are associated with greater behavioral change. 
+The comparison of the ARIMA forecast for each of the clusters compared to the actual electricity demand in 2013 (**[[Figure XX]]**) shows a difference between standard and time of use cluster demand behaviors in response to tariff rates. In the two standard clusters, the forecast and actual are fairly similar, with their difference centered around 0 and uniform across all hours. In both time of use clusters, the forecast seems to overestimate demand during periods of "High" tariffs and underestimate demand during periods of "Low" tariffs. In **[[Figure XX]]** the time of use clusters' red curves, which represents all "High" tariff hours, are shifted to the right, indicating that the forecast value at a given hour tends to be higher than the actual value. The green curves are shifted to the left, indicating that the forecast value at a given hour tends to be lower than the actual value. This aligns with the hypothesis that customers will change their behavior and shift their load from periods of high tariff rates to low tariff rates. Further statistical analysis should be done to determine if this visual trend is significant. Future research should investigate if overall usage in time of use households changes with the tariff implementation and whether certain patterns in hourly usage or the duration of high and low tariff periods are associated with greater behavioral change.
 
 ```{r}
 forecast_Std1 <- ARIMA_Std1_forecast$mean
@@ -452,16 +453,17 @@ cowplot::plot_grid(
 
 # Summary and Conclusions
 
-This analysis reveals a change in behavior that shifts demand from peak hours to off-peak hours. 
+This analysis reveals a change in behavior that shifts demand from peak hours to off-peak hours.
 
 Limitations: one year of data used to forecast one year of data
 
-Recommendations: 
+Recommendations:
 
-Model improvement: Weather data, 
+Model improvement: Weather data,
 
-_____________________________
-**From Canvas**: Report Sections: 
+------------------------------------------------------------------------
+
+**From Canvas**: Report Sections:
 
 #### Introduction, Motivation, Relevance, Objectives
 
@@ -473,10 +475,9 @@ Provide information on how the dataset for this analysis were collected (source)
 
 Add a table that summarizes your data structure (variables, units, ranges and/or central tendencies, data source if multiple are used, etc.). This table should inserted as a `kable` function in an R chunk. Just show the first 10 rows of your data. Do not include the code used to generate your table.
 
-
 #### Analysis (Methods and Models)
 
-Describe the analysis and tests that were performed. Described the components of the time series you identified. List any packages and functions used. Include visualizations of your dataset (i.e. time series plot, ACF, PACF, etc). 
+Describe the analysis and tests that were performed. Described the components of the time series you identified. List any packages and functions used. Include visualizations of your dataset (i.e. time series plot, ACF, PACF, etc).
 
 Format your R chunks so that graphs are displayed but code is not displayed. Accompany these graphs with text sections that describe the visualizations and provide context for further analyses.
 
