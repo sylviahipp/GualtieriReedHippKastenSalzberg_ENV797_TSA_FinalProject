@@ -83,7 +83,7 @@ The dataset for this project was obtained from a study done by UK Power Networks
 
 [^1]: UK Power Networks. (2015). *SmartMeter energy consumption data in London households.* London Datastore. <https://data.london.gov.uk/dataset/smartmeter-energy-consumption-data-in-london-households-vqm0d/>.
 
-1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table XX]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table YY]]**.
+1,123 of the participating households were subject to Dynamic Time of Use (dToU) energy prices throughout 2013. The prices were given to the households a day ahead and were displayed on the customers' smart meter or texted to them directly. Tariffs ranged from High (67.20p/kWh), Normal (11.76p/kWh), or Low (3.99p/kWh). The remaining 4,443 customers ("Standard" households) were given a flat rate tariff of 14.228p/kWh throughout the entire study period. A glimpse of the raw load data by household is shown in **[[Table 1]]** below, where `LCLid` is the unique household i.d., and `stdorTou` indicates whether the households were given standard tariff rates or subject to dToU tariffs. A glimpse of the raw data containing the tariff schedule throughout 2013 is shown in **[[Table 2]]**.
 
 ```{r Raw Data Tables, echo=FALSE, message=FALSE, warning=FALSE, }
 # household load
@@ -115,9 +115,9 @@ After aggregating load data to the half hour, the load dataset was processed to 
 
 [^4]: A household was identified as an outlier if the cumulative distance of its hourly usage from the mean was in the 99th percentile among all households.
 
-Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify clusters so to avoid capturing any changes in behavior caused by the treatment. First, each household's hourly demand was normalized relative to its total demand in 2012 so that clusters were identified based on energy usage patterns rather than total volume. For both the Standard and dToU households, the optimal number of clusters (i.e., clustering with the maximum silhouette score) was found to be 2. Each treatment group/cluster was then aggregated by taking the mean load at each hour across all households in the group. This resulted in four distinct hourly time series depicted below in **[[Figure XX]]**[^5] and summarized in **[[Table ZZ]].** As is shown in the figure, cluster 1 for both the standard and dToU groups exhibited highly varied usage between the winter and summer, while cluster 2 of both groups exhibited much smoother seasonality.
+Once the final sample of households was identified, households were separated by treatment group (Standard vs. dToU) and k-means clustering was used to aggregate households based on consumption behavior. Only load data from 2012 was used to identify clusters so to avoid capturing any changes in behavior caused by the treatment. First, each household's hourly demand was normalized relative to its total demand in 2012 so that clusters were identified based on energy usage patterns rather than total volume. For both the Standard and dToU households, the optimal number of clusters (i.e., clustering with the maximum silhouette score) was found to be 2. Each treatment group/cluster was then aggregated by taking the mean load at each hour across all households in the group. This resulted in four distinct hourly time series depicted below in **[[Figure 1]]**[^5] and summarized in **[[Table 3]].** As is shown in the figure, cluster 1 for both the standard and dToU groups exhibited highly varied usage between the winter and summer, while cluster 2 of both groups exhibited much smoother seasonality.
 
-[^5]: **[[Figure XX]]** shows load data aggregated at the daily level, but the time series used in the modeling and analysis are at the hourly level.
+[^5]: **[[Figure 1]]** shows load data aggregated at the daily level, but the time series used in the modeling and analysis are at the hourly level.
 
 ```{r Cluster Load Plots, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Daily Average Energy Usage By Cluster and Treatment Group", fig.height=4}
 # smooth to daily 
@@ -309,13 +309,15 @@ ts_ToU2_2013 <- msts(processed_ToU_2013$`ToU 2`,
 
 ## Exploratory Analysis
 
-All clusters show a similar pattern of peaking in the winter and dipping in the summer **[[FIGURE XX]]**. Std1 shows much higher variability and total load than any of the other three clusters, while ToU2 cluster shows the least variability between peak and not peak months. A visual analysis indicates that this data has multiple seasonal components, shown by the peaking and troughing within shorter and longer time periods.
+All clusters hourly time series show a similar pattern of peaking in the winter and dipping in the summer **[[FIGURE 2]]**. Std1 shows much higher variability and total load than any of the other three clusters, while ToU2 cluster shows the least variability between peak and not peak months. A visual analysis indicates that this data has multiple seasonal components, shown by the peaking and troughing within shorter and longer time periods.
 
-Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[FIGURE XX]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component.
+Because a model will be trained on the 2012 data, each cluster was decomposed for 2012 only. The decomposition, as shown in **[[FIGURE 3]]**, verifies that there are strong daily and weekly seasonal components. Because this data is only 1 year, the trend does not show an overall increase or decrease in load but likely captures the monthly component.
 
-The ACF and PACF of the residuals of the decomposition show that there is seasonal dependence that is not accurately accounted for in the decomposition (**[[FIGURE XX-XX]]**). The ACF shows a slow decay, indicating a persisting strong autoregressive component. Additionally, the ACF and PACF both show peaks at the 24 hour marks, indicating that the hourly component is not fully modeled in the decomposition. Therefore, complex models will be needed to accurately model all seasonal components.
+The ACF and PACF of the residuals of the decomposition show that there is seasonal dependence that is not accurately accounted for in the decomposition (**[[FIGURE 4-7]]**). The ACF shows a slow decay, indicating a persisting strong autoregressive component. Additionally, the ACF and PACF both show peaks at the 24 hour marks, indicating that the hourly component is not fully modeled in the decomposition. Therefore, complex models will be needed to accurately model all seasonal components.
 
-```{r message=FALSE, warning=FALSE, echo=FALSE}
+**[[FIGURE 8]]** shows that at the hourly level, tariff rates in 2013 tended to be highest during the hours 17 - 22.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE fig.cap = "Standard and Time of Use Demand Clustered Households, Hourly Time Series, 2012 and 2013"}
 
 raw_all <- rbind(raw_Std,raw_ToU)
 
@@ -326,18 +328,6 @@ ggplot(raw_all)+
           2012 and 2013")+
   scale_color_manual(
      values = c("Std 1" = "goldenrod1", "Std 2" = "red", "ToU 1" ="darkgreen", "ToU 2" = "blue"))+
-  labs(caption = "Figure XX.")
-
-ggplot(tariff_raw, aes(x = hour(datehour), fill = HourRate)) +
-  geom_bar() +
-  scale_fill_manual(values = c(
-    "Low" = "darkgreen",
-    "Normal" = "goldenrod1",
-    "High"  = "red")) +
-  xlab("Hour")+
-  ylab("Count")+
-  ggtitle("2013 Tariff Rate by Hour")+
-  labs(fill = "Tariff Rate")+
   labs(caption = "Figure XX.")
 
 ```
@@ -380,7 +370,7 @@ cowplot::plot_grid(Std1_2012_decomp_plot,Std2_2012_decomp_plot,
 
 ```
 
-```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX. Std1 ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="Std1 ACF and PACF"}
 #Std 1 ACF PACF
 std1_ACF<- autoplot(Acf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="Std1")
 std1_PACF<-autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main = "")
@@ -388,7 +378,7 @@ std1_PACF<-autoplot(Pacf(Std1_2012_decomp[,"Remainder"], lag.max = 72,plot = FAL
 cowplot::plot_grid(std1_ACF, std1_PACF)
 ```
 
-```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX, Std2 ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="Std2 ACF and PACF"}
 #Std 2 ACF PACF
 
 std2_ACF<-autoplot(Acf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FALSE), main ="Std2")
@@ -398,7 +388,7 @@ std2_PACF<-autoplot(Pacf(Std2_2012_decomp[,"Remainder"], lag.max = 72,plot = FAL
 cowplot::plot_grid(std2_ACF, std2_PACF)
 ```
 
-```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX, ToU1 ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="ToU1 ACF and PACF"}
 #ToU 1 ACF PACF
 
 ToU1_ACF<- autoplot(Acf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main ="Tou1")
@@ -408,7 +398,7 @@ ToU1_PACF<- autoplot(Pacf(ToU1_2012_decomp[,"Remainder"], lag.max = 60,plot = FA
 cowplot::plot_grid(ToU1_ACF,ToU1_PACF)
 ```
 
-```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="FIGUREXX, ToU ACF and PACF"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap="ToU ACF and PACF"}
 
 #ToU 2 ACF PACF
 
@@ -417,6 +407,21 @@ ToU2_ACF<- autoplot(Acf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALS
 ToU2_PACF<- autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FALSE), main = "")
 
 cowplot::plot_grid(ToU2_ACF,ToU2_PACF)
+```
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Tariff Rate Frequency by Hour"}
+ggplot(tariff_raw, aes(x = hour(datehour), fill = HourRate)) +
+  geom_bar() +
+  scale_fill_manual(values = c(
+    "Low" = "darkgreen",
+    "Normal" = "goldenrod1",
+    "High"  = "red")) +
+  xlab("Hour")+
+  ylab("Count")+
+  ggtitle("2013 Tariff Rate by Hour")+
+  labs(fill = "Tariff Rate")+
+  labs(caption = "Figure XX.")
 ```
 
 ## Methods
@@ -477,9 +482,9 @@ ARIMA_ToU2_plot <- autoplot(ts_ToU2_2013) +
 
 # Results
 
-The comparison of the ARIMA forecast for each of the clusters compared to the actual electricity demand in 2013 (**[[Figure XX]]**) shows a difference between standard and time of use cluster demand behaviors in response to tariff rates. In the two standard clusters, the forecast and actual are fairly similar, with their difference centered around 0 and uniform across all hours. In both time of use clusters, the forecast seems to overestimate demand during periods of "High" tariffs and underestimate demand during periods of "Low" tariffs. In **[[Figure XX]]** the time of use clusters' red curves, which represents all "High" tariff hours, are shifted to the right, indicating that the forecast value at a given hour tends to be higher than the actual value. The green curves are shifted to the left, indicating that the forecast value at a given hour tends to be lower than the actual value. This aligns with the hypothesis that customers will change their behavior and shift their load from periods of high tariff rates to low tariff rates. Notably, the Std1 cluster has a much larger residual range than any of the other clusters. Further statistical analysis should be done to determine if this visual trend is significant. Future research should investigate if overall usage in time of use households changes with the tariff implementation and whether certain patterns in hourly usage or the duration of high and low tariff periods are associated with greater behavioral change.
+The comparison of the ARIMA forecast for each of the clusters compared to the actual electricity demand in 2013 (**[[Figure 9]]**) shows a difference between standard and time of use cluster demand behaviors in response to tariff rates. In the two standard clusters, the forecast and actual are fairly similar, with their difference centered around 0 and uniform across all hours. In both time of use clusters, the forecast seems to overestimate demand during periods of "High" tariffs and underestimate demand during periods of "Low" tariffs. In **[[Figure 9]]** the time of use clusters' red curves, which represents all "High" tariff hours, are shifted to the right, indicating that the forecast value at a given hour tends to be higher than the actual value. The green curves are shifted to the left, indicating that the forecast value at a given hour tends to be lower than the actual value. This aligns with the hypothesis that customers will change their behavior and shift their load from periods of high tariff rates to low tariff rates. Notably, the Std1 cluster has a much larger residual range than any of the other clusters. Further statistical analysis should be done to determine if this visual trend is significant. Future research should investigate if overall usage in time of use households changes with the tariff implementation and whether certain patterns in hourly usage or the duration of high and low tariff periods are associated with greater behavioral change.
 
-```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "FigureXX. Forecasted Versus Actual Demand for Standard and Time-of-Use Households"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Forecasted Versus Actual Demand for Standard and Time-of-Use Households"}
 forecast_Std1 <- ARIMA_Std1_forecast$mean
 actual_Std1 <- processed_Std_2013$`Std 1`
 
@@ -492,7 +497,7 @@ actual_Std2 <- processed_Std_2013$`Std 2`
 
 tariff_Std2 <- cbind(tariff_raw, forecast_Std2, actual_Std2) %>% 
   mutate(forecast = as.numeric(forecast_Std2)) %>% 
-  mutate(forecast_actual = forecast_Std1-actual_Std1)
+  mutate(forecast_actual = forecast_Std2-actual_Std2)
 
 forecast_ToU1 <- ARIMA_ToU1_forecast$mean
 actual_ToU1 <- processed_ToU_2013$`ToU 1`
