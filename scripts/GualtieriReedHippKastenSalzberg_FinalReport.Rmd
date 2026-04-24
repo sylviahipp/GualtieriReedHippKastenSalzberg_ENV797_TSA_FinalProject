@@ -49,7 +49,8 @@ theme_set(global_theme)
 # row_spec(0, align = "c", bold = TRUE) %>% 
 #   kable_classic() 
 ```
-The GitHub repository for this projects is located here: https://github.com/sylviahipp/GualtieriReedHippKastenSalzberg_ENV797_TSA_FinalProject
+
+The GitHub repository for this projects is located here: <https://github.com/sylviahipp/GualtieriReedHippKastenSalzberg_ENV797_TSA_FinalProject>
 
 # Introduction
 
@@ -409,7 +410,6 @@ ToU2_PACF<- autoplot(Pacf(ToU2_2012_decomp[,"Remainder"], lag.max = 60,plot = FA
 cowplot::plot_grid(ToU2_ACF,ToU2_PACF)
 ```
 
-
 ```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Tariff Rate Frequency by Hour"}
 ggplot(tariff_raw, aes(x = hour(datehour), fill = HourRate)) +
   geom_bar() +
@@ -428,7 +428,7 @@ ggplot(tariff_raw, aes(x = hour(datehour), fill = HourRate)) +
 
 All data clusters in this study exhibited multiple seasonalities, indicating that the best forecasting models would be advanced models capable of handling daily, weekly, monthly, and/or yearly seasonalities. Four advanced models with such capacity were selected for testing: ARIMA + Fourier terms, TBATS, NNETAR, and the Prophet model. For the ARIMA + Fourier model, the function auto.arima() was used, nnetar() for NNETAR, tbats() for TBATS, and prophet() for the Prophet model. For models with variables that could be manually adjusted (ARIMA + Fourier and NNETAR), a train and test approach was used to determine the best fitting variables on the 2012 data. The first 11 months of hourly data were trained and the last month of hourly data was used as the test case. The variable values, K for ARIMA and K, p, and P for NNETAR, that produced the lowest AIC scores for each forecast method were selected for the fitted model. The fitted model for both of these methods was then used to forecast the load data for 2013.
 
-To forecast the models and predict 2013 hourly load for all clustered groups, the functions forecast() and predict() (Prophet only) were employed. Both the Prophet and TBATS forecasts failed to produce a reasonable 2013 load forecast and were eliminated from model selection. The TBATS model produced a straight line forecast, and the Prophet model produced a linearly growing forecast that did not capture monthly or annual seasonalities. The NNETAR and ARIMA + Fourier models both produced forecasts for 2013 that generally captured the trend and seasonality of the 2013 year. 
+To forecast the models and predict 2013 hourly load for all clustered groups, the functions forecast() and predict() (Prophet only) were employed. Both the Prophet and TBATS forecasts failed to produce a reasonable 2013 load forecast and were eliminated from model selection. The TBATS model produced a straight line forecast, and the Prophet model produced a linearly growing forecast that did not capture monthly or annual seasonalities. The NNETAR and ARIMA + Fourier models both produced forecasts for 2013 that generally captured the trend and seasonality of the 2013 year.
 
 Because the Std clusters (1 and 2) had no changes in rate structure from 2012 to 2013, Mean Absolute Percentage Error (MAPE) scores for the best fitting model are expected to be lowest in these clusters. However, the MAPE scores for each forecast all exceeded 40% indicating low accuracy in both forecasting models. Regardless, the forecast from the ARIMA + Fourier analysis model was the best fit for the hourly load data and selected as the study model due to having lower MAPE scores than the NNETAR forecasts. The final MAPE scores comparing cluster forecast to actual 2013 load data were as follows: Std1= 76.7%, Std2= 41.8%, ToU1= 49.9%, and ToU2= 45.7%.
 
@@ -595,3 +595,32 @@ Key limitations to this study include low model accuracy (determined from MAPE s
 
 ------------------------------------------------------------------------
 
+\newpage
+
+# Works Cited
+
+Barjaková, M., Belton, C. A., Purcell, K., & Lunn, P. D. (2024). Effective communication of time–of–use electricity tariffs: Plain and simple. *Utilities Policy*, 90, 101798. <https://doi.org/10.1016/j.jup.2024.101798>
+
+*Demand Response and Time-Variable Pricing Programs.* (2020, August 4). Energy.Gov. <https://www.energy.gov/cmei/femp/demand-response-and-time-variable-pricing-programs>
+
+Enrich, J., Li, R., Mizrahi, A., & Reguant, M. (2024). Measuring the impact of time-of-use pricing on electricity consumption: Evidence from Spain. *Journal of Environmental Economics and Management*, 123, 102901. <https://doi.org/10.1016/j.jeem.2023.102901>
+
+Faruqui, A., & Sergici, S. (2013). Arcturus: International Evidence on Dynamic Pricing. *The Electricity Journal*, 26(7), 55–65. <https://doi.org/10.1016/j.tej.2013.07.007>
+
+Fu, Z., Novan, K., & Smith, A. (2024). Do time-of-use prices deliver energy savings at the right time? *Journal of Environmental Economics and Management*, 128, 103054. <https://doi.org/10.1016/j.jeem.2024.103054>
+
+Gholamnia, M., Eslamirad, N., Sajadi, P., Masoumi, S., Shahabi, H., & Pilla, F. (2025). Dynamic electricity pricing model with hourly and monthly adjustments: A time series-based approach. *Energy Reports*, 13, 5238–5251. <https://doi.org/10.1016/j.egyr.2025.04.058>
+
+Harding, M., & Lamarche, C. (2016). Empowering Consumers Through Data and Smart Technology: Experimental Evidence on the Consequences of Time-of-Use Electricity Pricing Policies. *Journal of Policy Analysis and Management*, 35(4), 906–931. <https://www.jstor.org/stable/45105215>
+
+Meeks, R., Pless, J., & Wang, Z. (2024). Can Digitalization Improve Public Services? Evidence from Innovation in Energy Management. *SSRN Electronic Journal.* <https://doi.org/10.2139/ssrn.4709524>
+
+Schittekatte, T., Mallapragada, D., Joskow, P. L., & Schmalensee, R. (2024). Electricity Retail Rate Design in a Decarbonizing Economy: An Analysis of Time-of-use and Critical Peak Pricing. *The Energy Journal,* 45(3), 25–56. <https://doi.org/10.5547/01956574.45.3.tsch>
+
+The Benefits of Smart Meters. (n.d.). Retrieved March 20, 2026, from <https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/infrastructure/the-benefits-of-smart-meters>
+
+Walsh, D. (2025, March 19). *Smart meters generate revenue, improve efficiency for public utilities \| MIT Sloan.* <https://mitsloan.mit.edu/ideas-made-to-matter/smart-meters-generate-revenue-improve-efficiency-public-utilities>
+
+*What Are the Benefits of Time-Of-Use Pricing Policies?* (2025, April 12). Sustainability Directory. <https://energy.sustainability-directory.com/question/what-are-the-benefits-of-time-of-use-pricing-policies/>
+
+Yuniarto, H. A., Normasari, N. M. E., Silalahi, S. F., Gunawan, I. C., Deendarlianto, Aditya, I. A., Simaremare, A. A., & Haryadi, F. N. (2024). Customer behaviour towards energy usage with time of use tariff: A systematic literature review. *Journal of Revenue and Pricing Management,* 23(1), 44–61. <https://doi.org/10.1057/s41272-023-00420-2>
