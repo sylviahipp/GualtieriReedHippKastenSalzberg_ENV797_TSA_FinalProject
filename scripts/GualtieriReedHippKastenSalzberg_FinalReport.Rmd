@@ -420,9 +420,11 @@ cowplot::plot_grid(ToU2_ACF,ToU2_PACF)
 
 ## Methods
 
-All data clusters in this study exhibited multiple seasonalities, indicating that the best forecasting models would be advanced models capable of handling daily, weekly, monthly, and/or yearly seasonalities. Four advanced models with such capacity were selected for testing: ARIMA + Fourier terms, TBATS, NNETAR, and the Prophet model. For the ARIMA + Fourier model, the function auto.arima() was used, nnetar() for NNETAR, tbats() for TBATS, and prophet() for the Prophet model. For models with variables that could be manually adjusted (ARIMA + Fourier and NNETAR), a train and test approach was used to determine the best fitting variables on the 2012 data. The first 11 months of hourly data were trained and the last month of hourly data was used as the test case. The fitted model for both of these methods was then used to forecast the load data for 2013.
+All data clusters in this study exhibited multiple seasonalities, indicating that the best forecasting models would be advanced models capable of handling daily, weekly, monthly, and/or yearly seasonalities. Four advanced models with such capacity were selected for testing: ARIMA + Fourier terms, TBATS, NNETAR, and the Prophet model. For the ARIMA + Fourier model, the function auto.arima() was used, nnetar() for NNETAR, tbats() for TBATS, and prophet() for the Prophet model. For models with variables that could be manually adjusted (ARIMA + Fourier and NNETAR), a train and test approach was used to determine the best fitting variables on the 2012 data. The first 11 months of hourly data were trained and the last month of hourly data was used as the test case. The variable values, K for ARIMA and K, p, and P for NNETAR, that produced the lowest AIC scores for each forecast method were selected for the fitted model. The fitted model for both of these methods was then used to forecast the load data for 2013.
 
-To forecast the models and predict 2013 hourly load for all clustered groups, the functions forecast() and predict() (Prophet only) were employed. Both the Prophet and TBATS forecasts failed to produce a reasonable 2013 load forecast and were eliminated from model selection. The TBATS model produced a straight line forecast, and the Prophet model produced a linearly growing forecast that did not capture monthly or annual seasonalities. The NNETAR and ARIMA + Fourier models both produced forecasts for 2013 that generally captured the trend and seasonality of the 2013 year. Because the Std clusters (1 and 2) had no changes in rate structure from 2012 to 2013, Mean Absolute Percentage Error (MAPE) scores for the best fitting model are expected to be lowest in these clusters. However, the MAPE scores for each forecast all exceeded 40% indicating low accuracy with both forecasting models. Regardless, the forecast from the ARIMA + Fourier analysis model was the best fit for the hourly load data and selected as the study model due to having lower MAPE scores than the NNETAR forecasts.
+To forecast the models and predict 2013 hourly load for all clustered groups, the functions forecast() and predict() (Prophet only) were employed. Both the Prophet and TBATS forecasts failed to produce a reasonable 2013 load forecast and were eliminated from model selection. The TBATS model produced a straight line forecast, and the Prophet model produced a linearly growing forecast that did not capture monthly or annual seasonalities. The NNETAR and ARIMA + Fourier models both produced forecasts for 2013 that generally captured the trend and seasonality of the 2013 year. 
+
+Because the Std clusters (1 and 2) had no changes in rate structure from 2012 to 2013, Mean Absolute Percentage Error (MAPE) scores for the best fitting model are expected to be lowest in these clusters. However, the MAPE scores for each forecast all exceeded 40% indicating low accuracy in both forecasting models. Regardless, the forecast from the ARIMA + Fourier analysis model was the best fit for the hourly load data and selected as the study model due to having lower MAPE scores than the NNETAR forecasts. The final MAPE scores comparing cluster forecast to actual 2013 load data were as follows: Std1= 76.7%, Std2= 41.8%, ToU1= 49.9%, and ToU2= 45.7%.
 
 ## Models
 
@@ -581,32 +583,9 @@ ggdraw()+
 
 # Summary and Conclusions
 
-This study separated London electricity users into clusters based on participation in a ToU tariff scheme that began in 2013. Models were tested and trained via forecasting during the year prior to the tariff scheme being installed in order to generate forecasts for the 2013 year. The goal of this study was to determine if there were any behavioral changes that could be observed from forecasts of expected load demand vs actual load after the tarriff 'treatment' had been applied to only the select clusters of individuals that opted in. This analysis did reveal a change in behavior that shifts demand from peak hours to off-peak hours. Load forecasts from clusters of ToU tariff users showed over-prediction during peak hours for users and under-prediction during off-peak hours in the year the tariffs were implemented. Standard user clusters that did not partake in the ToU tariff scheme did not have any visible behavior shifts from expected based on the forecast.
+This study separated London electricity users into clusters based on participation in a ToU tariff scheme that began in 2013. Models were tested and trained via forecasting during the year prior to the tariff scheme being installed in order to generate forecasts for the 2013 year. The goal of this study was to determine if there were any behavioral changes that could be observed from forecasts of expected load demand vs actual load after the tariff 'treatment' had been applied to only the select clusters of individuals that opted in. This analysis did reveal a change in behavior that shifts demand from peak hours to off-peak hours. Load forecasts from clusters of ToU tariff users showed over-prediction during peak hours for users and under-prediction during off-peak hours in the year the tariffs were implemented. Standard user clusters that did not partake in the ToU tariff scheme did not have any visible behavior shifts from expected based on the forecast.
 
 Key limitations to this study include low model accuracy (determined from MAPE score) and lack of longitudinal data. Only one year of data, 2012, was available in sufficient quantity to cluster and perform exploratory analysis from this data-set. Similar studies might achieve greater model accuracy where it is most expected (in standard groups) if multiple years of data are available prior to the forecast year. The annual peaks and lows that the forecasting models in this study struggled to capture may be better represented by additional years for model training. Additionally, the inclusion of weather data like hourly temperature may also be utilized in future studies as an exogenous variable and aid in more accurate forecasts of the most extreme load peaks. With more accurate forecasts, the strength of conclusions regarding behavior shifts would be higher. Future research may seek to explore similar data-sets in other urban locations to compare trends spatially or across different tariff structures.
 
 ------------------------------------------------------------------------
 
-**From Canvas**: Report Sections:
-
-#### Introduction, Motivation, Relevance, Objectives
-
-Write a few paragraphs detailing the rationale for your study. This should include both the context of the topic as well as a rationale for your choice of dataset (reason for location, variables, etc.). You may choose to include citations if you like or any other reference you may have used during the project (optional).
-
-#### Dataset information [**Sylvia**]
-
-Provide information on how the dataset for this analysis were collected (source), the data contained in the dataset (format). Describe how you wrangled/processed your dataset to get the time series object.
-
-Add a table that summarizes your data structure (variables, units, ranges and/or central tendencies, data source if multiple are used, etc.). This table should inserted as a `kable` function in an R chunk. Just show the first 10 rows of your data. Do not include the code used to generate your table.
-
-#### Analysis (Methods and Models)
-
-Describe the analysis and tests that were performed. Described the components of the time series you identified. List any packages and functions used. Include visualizations of your dataset (i.e. time series plot, ACF, PACF, etc).
-
-Format your R chunks so that graphs are displayed but code is not displayed. Accompany these graphs with text sections that describe the visualizations and provide context for further analyses.
-
-Each figure should be accompanied by a caption, and referenced within the text if applicable.
-
-#### Summary and Conclusions
-
-Summarize your major findings from your analyses in a few paragraphs and plots. What conclusions do you draw from your findings? Any insights on how to improve the model?
