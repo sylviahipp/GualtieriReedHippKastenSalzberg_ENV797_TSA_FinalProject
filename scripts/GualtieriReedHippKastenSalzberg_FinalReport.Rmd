@@ -318,7 +318,7 @@ The ACF and PACF of the residuals of the decomposition show that there is season
 
 **[[FIGURE 8]]** shows that at the hourly level, tariff rates in 2013 tended to be highest during the hours 17 - 22.
 
-```{r message=FALSE, warning=FALSE, echo=FALSE fig.cap = "Standard and Time of Use Demand Clustered Households, Hourly Time Series, 2012 and 2013"}
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.cap = "Standard and Time of Use Demand Clustered Households, Hourly Time Series, 2012 and 2013"}
 
 raw_all <- rbind(raw_Std,raw_ToU)
 
