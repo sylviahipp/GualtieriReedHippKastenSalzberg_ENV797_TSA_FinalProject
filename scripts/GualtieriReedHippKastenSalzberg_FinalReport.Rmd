@@ -49,6 +49,7 @@ theme_set(global_theme)
 # row_spec(0, align = "c", bold = TRUE) %>% 
 #   kable_classic() 
 ```
+The GitHub repository for this projects is located here: https://github.com/sylviahipp/GualtieriReedHippKastenSalzberg_ENV797_TSA_FinalProject
 
 # Introduction
 
